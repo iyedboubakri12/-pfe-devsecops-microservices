@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2016",
+    "esModuleInterop": true,
+    "baseUrl": "./", 
+    "outDir": "./dist",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "types": ["jest", "node"],
+    "paths": {
+      "@app/*": ["src/app/*"],
+      "@services/*": ["src/app/services/*"],
+      "@models/*": ["src/app/models/*"],
+      "@shared/*": ["src/app/shared/*"],
+      "@layout/*": ["src/app/layout/*"],
+      "@config/*": ["src/app/config/*"],
+      "@environments/*": ["src/environments/*"]
+    }
+  }
+}

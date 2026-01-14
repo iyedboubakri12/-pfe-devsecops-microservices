@@ -1,0 +1,19 @@
+FROM node:16 AS build
+RUN set -eux; \
+    mkdir -p /var/cache/nginx /var/run /run /var/cache/nginx/client_temp; \
+    chown -R root:root /var/cache/nginx /var/run /run /var/cache/nginx/client_temp; \
+    chmod -R 755 /var/cache/nginx /var/run /run /var/cache/nginx/client_temp; \
+    touch /run/nginx.pid; \
+    chown root:root /run/nginx.pid
+WORKDIR /app
+COPY package*.json ./
+RUN npm install -g @angular/cli@16 && npm install --legacy-peer-deps
+COPY . .
+RUN npm run build
+FROM nginx:alpine
+COPY --from=build /app/dist/demo /usr/share/nginx/html/
+EXPOSE 80
+USER root
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:80/ || exit 1
+CMD ["nginx", "-g", "daemon off;"]

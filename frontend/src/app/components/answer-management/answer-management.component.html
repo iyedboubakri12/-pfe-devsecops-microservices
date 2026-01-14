@@ -1,0 +1,73 @@
+<div class="container">
+  <h2>Gestion des réponses</h2>
+
+  <!-- Filtres -->
+  <div class="filters">
+    <input type="number" [(ngModel)]="studentIdFilter" placeholder="ID étudiant">
+    <input type="number" [(ngModel)]="examIdFilter" placeholder="ID examen">
+    <button (click)="searchAnswers()">Rechercher</button>
+  </div>
+
+  <!-- Tableau des réponses -->
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Texte</th>
+        <th>Étudiant</th>
+        <th>Question</th>
+        <th>Examen</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let answer of answers">
+        <td>{{ answer.id }}</td>
+        <td>{{ answer.text }}</td>
+        <td>{{ answer.studentId || 'N/A' }}</td>
+        <td>{{ answer.questionId || 'N/A' }}</td>
+        <td>{{ answer.examId || 'N/A' }}</td>
+        <td>
+          <button class="edit" (click)="openEditModal(answer)">✏️</button>
+          <button class="delete" (click)="deleteAnswer(answer.id)">🗑️</button>
+        </td>
+      </tr>
+      <tr *ngIf="answers.length === 0">
+        <td colspan="6">Aucune réponse trouvée</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Bouton pour ajouter une réponse -->
+  <button class="add" (click)="openAddModal()">Ajouter une réponse</button>
+
+  <!-- Message d'état -->
+  <p [ngClass]="{'success': message.includes('succès'), 'error': message.includes('Erreur')}">{{ message }}</p>
+
+  <!-- Modale pour ajouter/modifier une réponse -->
+  <div class="modal" *ngIf="showModal">
+    <div class="modal-content">
+      <h3>{{ isEditMode ? 'Modifier la réponse' : 'Ajouter une réponse' }}</h3>
+      <div class="form-group">
+        <label>ID de l’étudiant</label>
+        <input type="number" [(ngModel)]="selectedAnswer.studentId" required>
+      </div>
+      <div class="form-group">
+        <label>ID de la question</label>
+        <input type="number" [(ngModel)]="selectedAnswer.questionId" required>
+      </div>
+      <div class="form-group">
+        <label>ID de l’examen</label>
+        <input type="number" [(ngModel)]="selectedAnswer.examId" required>
+      </div>
+      <div class="form-group">
+        <label>Texte</label>
+        <textarea [(ngModel)]="selectedAnswer.text" required></textarea>
+      </div>
+      <div class="modal-buttons">
+        <button class="cancel" (click)="closeModal()">Annuler</button>
+        <button class="save" (click)="saveAnswer()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+server:
+  port: 8090
+spring:
+  application:
+    name: zuul-service
+  cors:
+    allowed-origins: "*"
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: false
+    max-age: 3600
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-service:8761/eureka/
+zuul:
+  routes:
+    users-service:
+      path: /students/**
+      serviceId: USERS-SERVICE
+      stripPrefix: false
+    courses-service:
+      path: /courses/**
+      serviceId: COURSES-SERVICE
+      stripPrefix: false
+    exams-service:
+      path: /exams/**
+      serviceId: EXAMS-SERVICE
+      stripPrefix: false
+    answers-service:  # Clé YAML (peut être en minuscules)
+      path: /answers/**
+      serviceId: ANSWERS-SERVICE  # Doit être en majuscules, avec "S"
+      stripPrefix: false
+  add-proxy-headers: true
+  host:
+    connect-timeout-millis: 10000
+    socket-timeout-millis: 60000
+  sensitive-headers: []

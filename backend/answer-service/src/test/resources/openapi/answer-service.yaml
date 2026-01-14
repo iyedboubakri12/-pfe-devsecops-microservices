@@ -1,0 +1,133 @@
+openapi: 3.0.3
+info:
+  title: Answer Service API
+  version: 1.0.0
+  description: API pour gérer les réponses des étudiants aux examens
+servers:
+  - url: http://localhost:8080
+paths:
+  /answers:
+    get:
+      summary: Liste toutes les réponses
+      responses:
+        '200':
+          description: Liste des réponses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Answer'
+    post:
+      summary: Crée plusieurs réponses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Answer'
+      responses:
+        '201':
+          description: Réponses créées
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Answer'
+  /answers/student/{studentId}/exam/{examId}:
+    get:
+      summary: Récupère les réponses d'un étudiant pour un examen
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste des réponses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Answer'
+  /answers/student/{studentId}/exams-replied:
+    get:
+      summary: Récupère les IDs des examens auxquels un étudiant a répondu
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste des IDs d'examens
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+  /answers/{id}:
+    put:
+      summary: Met à jour une réponse
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Answer'
+      responses:
+        '200':
+          description: Réponse mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Answer'
+        '404':
+          description: Réponse non trouvée
+    delete:
+      summary: Supprime une réponse
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Réponse supprimée
+        '404':
+          description: Réponse non trouvée
+components:
+  schemas:
+    Answer:
+      type: object
+      properties:
+        id:
+          type: string
+        studentId:
+          type: integer
+        questionId:
+          type: integer
+        answerText:
+          type: string
+      required:
+        - studentId
+        - questionId

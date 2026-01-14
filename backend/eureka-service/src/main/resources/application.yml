@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: eureka-service
+server:
+  port: 8761
+eureka:
+  client:
+    registerWithEureka: false
+    fetchRegistry: false
+    service-url:
+      defaultZone: http://eureka-service:8761/eureka/
+  server:
+    enable-self-preservation: false
+    waitTimeInMsWhenSyncEmpty: 0
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+logging:
+  level:
+    com.netflix.eureka: DEBUG
+    com.netflix.discovery: DEBUG

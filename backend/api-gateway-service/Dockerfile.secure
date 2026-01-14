@@ -1,0 +1,26 @@
+# Étape 1 : Construire avec Maven et JDK 17
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
+WORKDIR /app
+# Copier le projet api-gateway-service
+RUN set -eux; \
+    addgroup --system --gid 1001 appgroup 2>/dev/null || \
+    groupadd --system --gid 1001 appgroup 2>/dev/null || true; \
+    adduser --system --disabled-password --uid 1001 --ingroup appgroup appuser 2>/dev/null || \
+    useradd --system --uid 1001 --gid appgroup appuser 2>/dev/null || true; \
+    mkdir -p /app && \
+    chown -R 1001:1001 /app
+COPY . .
+# Construire le JAR
+RUN mvn clean package -DskipTests
+# Étape 2 : Image finale avec JDK 17
+FROM openjdk:17-slim
+WORKDIR /app
+# Copier le JAR construit
+COPY --from=builder /app/target/api-gateway-service-0.0.1-SNAPSHOT.jar /app/api-gateway-service.jar
+# Exposer le port 8090 (défini dans application.properties)
+EXPOSE 8090
+# Lancer le service
+USER 1001:1001
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8090/actuator/health || exit 1
+CMD ["java", "-jar", "/app/api-gateway-service.jar"]
