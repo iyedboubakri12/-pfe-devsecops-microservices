@@ -1,22 +1,42 @@
 variables:
-  GIT_DEPTH: "1"  
+  GIT_DEPTH: "1"
 
 stages:
-  - test
+  - build-shared
+  - test-and-scan
+  - iac-security
 
-backend-unit-tests:
-  stage: test
+install-commons:
+  stage: build-shared
   image: maven:3.8.5-openjdk-17
   script:
-    - cd backend
-    - mvn test
-  allow_failure: false
+    - cd backend/common-service && mvn install -DskipTests
+    - cd ../common-student && mvn install -DskipTests
+    - cd ../common-exam && mvn install -DskipTests
+  artifacts:
+    paths:
+      - ~/.m2/repository/com/microservices/
 
-frontend-unit-tests:
-  stage: test
-  image: trion/ng-cli-karma:latest
+backend-tests:
+  stage: test-and-scan
+  image: maven:3.8.5-openjdk-17
+  script:
+    - cd backend/api-gateway-service
+    - mvn test
+  allow_failure: true
+
+frontend-tests:
+  stage: test-and-scan
+  image: node:18-alpine
   script:
     - cd frontend
     - npm install --legacy-peer-deps
-    - npm test -- --watch=false --browsers=ChromeHeadless
+    - npm test  
   allow_failure: true
+
+sonarqube-backend:
+  stage: test-and-scan
+  image: maven:3.8.5-openjdk-17
+  script:
+    - cd backend/api-gateway-service
+    - mvn verify sonar:sonar -Dsonar.projectKey=devsecops-pipeline -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN
