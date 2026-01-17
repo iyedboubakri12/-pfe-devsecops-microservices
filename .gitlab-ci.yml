@@ -8,7 +8,7 @@ backend-unit-tests:
   stage: test
   image: maven:3.8.5-openjdk-17
   script:
-    - cd Back-End
+    - cd backend
     - mvn test
   allow_failure: false
 
@@ -16,7 +16,7 @@ frontend-unit-tests:
   stage: test
   image: trion/ng-cli-karma:latest
   script:
-    - cd Front-End
+    - cd frontend
     - npm install --legacy-peer-deps
     - npm test -- --watch=false --browsers=ChromeHeadless
   allow_failure: true
