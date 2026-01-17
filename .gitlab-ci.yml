@@ -1,0 +1,31 @@
+
+stages:
+  - test
+  - sonarqube
+
+
+backend-test-job:
+  stage: test
+  image: maven:3.8.5-openjdk-17      
+  script:
+    - cd backend                    
+    - mvn test                       
+  allow_failure: true                
+
+
+frontend-test-job:
+  stage: test
+  image: trion/ng-cli-karma:14.2.10  
+  script:
+    - cd frontend                  
+    - npm install --legacy-peer-deps 
+    - npm test -- --watch=false --browsers=ChromeHeadless 
+  allow_failure: true
+
+
+sonarqube-job:
+  stage: sonarqube
+  image: maven:3.8.5-openjdk-17
+  script:
+    - cd backend
+    - mvn verify sonar:sonar -Dsonar.projectKey=devsecops-pipeline -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN
