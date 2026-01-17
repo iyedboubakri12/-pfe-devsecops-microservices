@@ -1,23 +1,22 @@
+variables:
+  GIT_DEPTH: "1"  
+
 stages:
   - test
-
 
 backend-unit-tests:
   stage: test
   image: maven:3.8.5-openjdk-17
   script:
-    - echo "=== Backend unit tests ==="
-    - cd backend         
+    - cd Back-End
     - mvn test
-  allow_failure: false     
-
+  allow_failure: false
 
 frontend-unit-tests:
   stage: test
   image: trion/ng-cli-karma:latest
   script:
-    - echo "=== Frontend unit tests ==="
-    - cd frontend        
+    - cd Front-End
     - npm install --legacy-peer-deps
     - npm test -- --watch=false --browsers=ChromeHeadless
-  allow_failure: true      
+  allow_failure: true
