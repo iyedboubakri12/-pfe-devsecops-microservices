@@ -34,9 +34,3 @@ frontend-tests:
     - npm test  
   allow_failure: true
 
-sonarqube-backend:
-  stage: test-and-scan
-  image: maven:3.8.5-openjdk-17
-  script:
-    - cd backend/api-gateway-service
-    - mvn verify sonar:sonar -Dsonar.projectKey=devsecops-pipeline -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN

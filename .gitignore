@@ -1,0 +1,12 @@
+# Node / Angular
+node_modules/
+dist/
+coverage/
+
+# Java / Spring
+target/
+.m2/
+
+# OS
+.DS_Store
+Thumbs.db
