@@ -4,7 +4,7 @@ variables:
 stages:
   - build-shared
   - test-and-scan
-  - iac-security
+  - security-scan  
 
 install-commons:
   stage: build-shared
