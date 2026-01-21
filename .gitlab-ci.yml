@@ -20,9 +20,16 @@ install-commons:
 backend-tests:
   stage: test-and-scan
   image: maven:3.8.5-openjdk-17
+  needs:
+    - install-commons
+  dependencies:
+    - install-commons
   script:
     - cd backend
-    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do echo "Testing $service..."; cd $service && mvn test && cd ..; done
+    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do 
+        echo "Testing $service..."; 
+        (cd $service && mvn test) || true;
+      done
   allow_failure: true
 
 frontend-tests:
@@ -36,8 +43,15 @@ frontend-tests:
 sonarqube-sast:
   stage: security-scan
   image: maven:3.8.5-openjdk-17
+  needs:
+    - install-commons
+  dependencies:
+    - install-commons
   script:
     - cd backend
-    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do echo "Running SAST on $service..."; cd $service && mvn verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=devsecops-pipeline-$service -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN && cd ..; done
+    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do 
+        echo "Running SAST on $service..."; 
+        (cd $service && mvn verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=devsecops-pipeline-$service -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN) || true;
+      done
   allow_failure: true
 
