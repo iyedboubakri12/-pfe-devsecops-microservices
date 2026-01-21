@@ -51,7 +51,7 @@ sonarqube-sast:
     - cd backend
     - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do 
         echo "Running SAST on $service..."; 
-        (cd $service && mvn verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=devsecops-pipeline-$service -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN) || true;
+        (cd $service && mvn verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=devsecops-pipeline-$service -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml) || true;
       done
   allow_failure: true
 
