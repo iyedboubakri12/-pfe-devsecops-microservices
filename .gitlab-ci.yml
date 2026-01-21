@@ -22,10 +22,7 @@ backend-tests:
   image: maven:3.8.5-openjdk-17
   script:
     - cd backend
-    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-        echo "Testing $service..."
-        cd $service && mvn test && cd ..;
-      done
+    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do echo "Testing $service..."; cd $service && mvn test && cd ..; done
   allow_failure: true
 
 frontend-tests:
@@ -41,9 +38,6 @@ sonarqube-sast:
   image: maven:3.8.5-openjdk-17
   script:
     - cd backend
-    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-        echo "Running SAST on $service..."
-        cd $service && mvn verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=devsecops-pipeline-$service -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN && cd ..;
-      done
+    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do echo "Running SAST on $service..."; cd $service && mvn verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=devsecops-pipeline-$service -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN && cd ..; done
   allow_failure: true
 
