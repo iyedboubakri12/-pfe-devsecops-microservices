@@ -76,11 +76,7 @@ sonarqube-sast:
     - cd backend
     - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do 
         echo "Running SonarQube scan on $service..."; 
-        (cd $service && mvn clean verify sonar:sonar \
-          -Dsonar.projectKey=devsecops-pipeline-$service \
-          -Dsonar.host.url=$SONAR_HOST_URL \
-          -Dsonar.login=$SONAR_TOKEN \
-          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml) || true;
+        (cd $service && mvn clean verify sonar:sonar -Dsonar.projectKey=devsecops-pipeline-$service -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml) || true;
       done
   allow_failure: true
   
