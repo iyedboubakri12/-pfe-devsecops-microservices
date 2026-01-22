@@ -1,7 +1,5 @@
 variables:
   GIT_DEPTH: "1"
-  SONAR_HOST_URL: "http://192.168.168.129:9000"
-  SONAR_TOKEN: "sqa_c0a6b2f9f9d73bca15999fb36c483775162e95e0"
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -16,68 +14,61 @@ stages:
 install-commons:
   stage: build-shared
   image: maven:3.8.5-openjdk-17
-  timeout: 30 minutes
   script:
     - cd backend/common-service && mvn install -DskipTests
     - cd ../common-student && mvn install -DskipTests
     - cd ../common-exam && mvn install -DskipTests
-  artifacts:
-    paths:
-      - ~/.m2/repository/com/microservices/
-    expire_in: 1 week
 
 backend-tests:
   stage: test-and-scan
   image: maven:3.8.5-openjdk-17
-  timeout: 45 minutes
   needs:
-    - install-commons
-  dependencies:
     - install-commons
   script:
     - cd backend
-    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do 
-        echo "Testing $service..."; 
-        (cd $service && mvn clean test) || true;
+    - |
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        echo "Running tests for $service"
+        cd $service
+        mvn test
+        cd ..
       done
   artifacts:
+    when: always
     paths:
       - backend/*/target/site/jacoco/
-      - backend/*/target/test-results/
-    expire_in: 1 week
-    when: always
+      - backend/*/target/surefire-reports/
   allow_failure: true
 
 frontend-tests:
   stage: test-and-scan
   image: node:18-alpine
-  timeout: 20 minutes
   script:
     - cd frontend
     - npm ci --legacy-peer-deps
     - npm run test -- --coverage
   artifacts:
+    when: always
     paths:
       - frontend/coverage/
-    expire_in: 1 week
-    when: always
   allow_failure: true
+
 sonarqube-sast:
   stage: security-scan
   image: maven:3.8.5-openjdk-17
-  timeout: 60 minutes
   needs:
-    - install-commons
-    - backend-tests
-  dependencies:
-    - install-commons
     - backend-tests
   script:
     - cd backend
-    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do 
-        echo "Running SonarQube scan on $service..."; 
-        (cd $service && mvn clean verify sonar:sonar -Dsonar.projectKey=devsecops-pipeline-$service -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml) || true;
+    - |
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        echo "SonarQube scan for $service"
+        cd $service
+        mvn verify sonar:sonar \
+          -Dsonar.projectKey=devsecops-pipeline-$service \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+        cd ..
       done
   allow_failure: true
-  
-
