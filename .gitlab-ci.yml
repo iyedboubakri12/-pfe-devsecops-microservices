@@ -1,8 +1,7 @@
 variables:
   GIT_DEPTH: "1"
   SONAR_HOST_URL: "http://192.168.168.129:9000"
-  SONAR_TOKEN: "sqa_c0a6b2f9f9d73bca15999fb36c483775162e95e0"
-  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -18,9 +17,9 @@ install-commons:
   stage: build-shared
   image: maven:3.8.5-openjdk-17
   script:
-    - cd backend/common-service && mvn install -DskipTests $MAVEN_OPTS
-    - cd ../common-student && mvn install -DskipTests $MAVEN_OPTS
-    - cd ../common-exam && mvn install -DskipTests $MAVEN_OPTS
+    - cd backend/common-service && mvn install -DskipTests $MAVEN_CLI_OPTS
+    - cd ../common-student && mvn install -DskipTests $MAVEN_CLI_OPTS
+    - cd ../common-exam && mvn install -DskipTests $MAVEN_CLI_OPTS
   artifacts:
     paths:
       - .m2/repository/
@@ -35,13 +34,14 @@ backend-tests:
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service; do
         echo "Testing $service..."
-        (cd $service && mvn test $MAVEN_OPTS) || true
+        (cd $service && mvn test $MAVEN_CLI_OPTS) || true
       done
   artifacts:
     when: always
     paths:
-      - "backend/*/target/site/jacoco/jacoco.xml"
+      - backend/*/target/site/jacoco/jacoco.xml
     expire_in: 1 hour
+
 frontend-tests:
   stage: test-and-scan
   image: node:18-alpine
@@ -55,7 +55,7 @@ frontend-tests:
       - frontend/coverage/
     expire_in: 1 week
     when: always
-allow_failure: true    
+  allow_failure: true
 
 sonar-business:
   stage: security-scan
@@ -66,7 +66,7 @@ sonar-business:
     - |
       for service in user-service exam-service answer-service course-service; do 
         echo "SAST Business: $service"
-        (cd $service && mvn sonar:sonar $MAVEN_OPTS \
+        (cd $service && mvn sonar:sonar $MAVEN_CLI_OPTS \
           -Dsonar.projectKey=sportApp-$service \
           -Dsonar.host.url=$SONAR_HOST_URL \
           -Dsonar.login=$SONAR_TOKEN \
@@ -83,7 +83,7 @@ sonar-infra:
     - |
       for service in api-gateway-service eureka-service; do 
         echo "SAST Infra: $service"
-        (cd $service && mvn sonar:sonar $MAVEN_OPTS \
+        (cd $service && mvn sonar:sonar $MAVEN_CLI_OPTS \
           -Dsonar.projectKey=sportApp-$service \
           -Dsonar.host.url=$SONAR_HOST_URL \
           -Dsonar.login=$SONAR_TOKEN) || true
