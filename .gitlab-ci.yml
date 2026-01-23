@@ -23,7 +23,7 @@ install-commons:
     - cd ../common-exam && mvn install -DskipTests $MAVEN_CLI_OPTS
   artifacts:
     paths:
-      - .m2/repository/
+      - .m2/repository/com/microservices/ 
     expire_in: 1 hour
 
 backend-tests:
