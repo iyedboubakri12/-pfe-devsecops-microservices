@@ -14,18 +14,24 @@ stages:
   - test-and-scan
   - security-scan
 
+# ---------------------------
+# 1️⃣ INSTALL COMMON MODULES
+# ---------------------------
 install-commons:
   stage: build-shared
   image: maven:3.8.5-openjdk-17
   script:
-    - cd backend/common-service && mvn install -DskipTests $MAVEN_CLI_OPTS
-    - cd ../common-student && mvn install -DskipTests $MAVEN_CLI_OPTS
-    - cd ../common-exam && mvn install -DskipTests $MAVEN_CLI_OPTS
+    - cd backend/common-service && mvn clean install -DskipTests $MAVEN_CLI_OPTS
+    - cd ../common-student && mvn clean install -DskipTests $MAVEN_CLI_OPTS
+    - cd ../common-exam && mvn clean install -DskipTests $MAVEN_CLI_OPTS
   artifacts:
     paths:
-      - .m2/repository/com/microservices/ 
+      - .m2/repository/com/microservices/
     expire_in: 1 hour
 
+# ---------------------------
+# 2️⃣ BACKEND TESTS + JACOCO
+# ---------------------------
 backend-tests:
   stage: test-and-scan
   image: maven:3.8.5-openjdk-17
@@ -34,8 +40,10 @@ backend-tests:
     - cd backend
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service; do
-        echo "Testing $service..."
-        (cd $service && mvn test $MAVEN_CLI_OPTS) || true
+        echo "Running tests for $service"
+        cd $service
+        mvn clean test $MAVEN_CLI_OPTS
+        cd ..
       done
   artifacts:
     when: always
@@ -43,6 +51,9 @@ backend-tests:
       - backend/**/target/site/jacoco/jacoco.xml
     expire_in: 1 hour
 
+# ---------------------------
+# 3️⃣ FRONTEND TESTS
+# ---------------------------
 frontend-tests:
   stage: test-and-scan
   image: node:18-alpine
@@ -52,26 +63,30 @@ frontend-tests:
     - npm ci --legacy-peer-deps
     - npm run test -- --coverage --watchAll=false
   artifacts:
+    when: always
     paths:
       - frontend/coverage/
     expire_in: 1 week
-    when: always
   allow_failure: true
 
+# ---------------------------
+# 4️⃣ SONARQUBE ANALYSIS
+# ---------------------------
 sonarqube-sast:
   stage: security-scan
   image: maven:3.8.5-openjdk-17
-  needs: ["install-commons", "backend-tests", "frontend-tests"]
+  needs: ["backend-tests", "frontend-tests"]
   script:
     - cd backend
     - |
       for service in user-service exam-service answer-service course-service api-gateway-service eureka-service; do 
-        echo "================ $service ================"
-        (cd $service && mvn compile sonar:sonar $MAVEN_CLI_OPTS \
+        echo "========== SonarQube Analysis: $service =========="
+        cd $service
+        mvn sonar:sonar $MAVEN_CLI_OPTS \
           -Dsonar.projectKey=devsecops-pipeline-$service \
           -Dsonar.host.url=$SONAR_HOST_URL \
           -Dsonar.login=$SONAR_TOKEN \
-          -Dsonar.java.binaries=target/classes \
-          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml) || echo "Sonar failed for $service"
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+        cd ..
       done
   allow_failure: true
