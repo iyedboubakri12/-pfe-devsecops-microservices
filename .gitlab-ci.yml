@@ -68,7 +68,7 @@ sonarqube-sast:
       for service in user-service exam-service answer-service course-service api-gateway-service eureka-service; do 
         echo "================ $service ================"
         (cd $service && mvn compile sonar:sonar $MAVEN_CLI_OPTS \
-          -Dsonar.projectKey=sportApp-$service \
+          -Dsonar.projectKey=devsecops-pipeline-$service \
           -Dsonar.host.url=$SONAR_HOST_URL \
           -Dsonar.login=$SONAR_TOKEN \
           -Dsonar.java.binaries=target/classes \
