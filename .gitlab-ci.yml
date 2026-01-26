@@ -35,7 +35,7 @@ backend-tests:
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service; do
         echo "Testing $service..."
-        (cd $service && mvn clean verify $MAVEN_CLI_OPTS -Dmaven.test.failure.ignore=true)
+        (cd $service && mvn clean test $MAVEN_CLI_OPTS)
       done
   artifacts:
     when: always
