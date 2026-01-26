@@ -16,11 +16,19 @@ public class TestContainersConfig {
                 .withUsername("test")
                 .withPassword("test")
                 .withReuse(true);
-        mySQLContainer.start();
-        System.setProperty("spring.datasource.url", mySQLContainer.getJdbcUrl());
-        System.setProperty("spring.datasource.username", "test");
-        System.setProperty("spring.datasource.password", "test");
-        System.setProperty("spring.jpa.hibernate.ddl-auto", "create-drop");
+        try {
+            mySQLContainer.start();
+            System.setProperty("spring.datasource.url", mySQLContainer.getJdbcUrl());
+            System.setProperty("spring.datasource.username", "test");
+            System.setProperty("spring.datasource.password", "test");
+            System.setProperty("spring.jpa.hibernate.ddl-auto", "create-drop");
+        } catch (Exception e) {
+            System.err.println("TestContainers startup failed, falling back to localhost: " + e.getMessage());
+            System.setProperty("spring.datasource.url", "jdbc:mysql://localhost:3306/course-service-test");
+            System.setProperty("spring.datasource.username", "test");
+            System.setProperty("spring.datasource.password", "test");
+            System.setProperty("spring.jpa.hibernate.ddl-auto", "create-drop");
+        }
     }
 
     @Bean

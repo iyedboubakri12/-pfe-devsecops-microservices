@@ -51,6 +51,7 @@ describe('AnswerManagementComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+  
 
   it('should load all answers on init', fakeAsync(() => {
     answerService.getAllAnswers.mockReturnValue(of(mockAnswers));

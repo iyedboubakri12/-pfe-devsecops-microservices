@@ -11,11 +11,18 @@ public class TestContainersConfig {
     private static final MongoDBContainer mongoDBContainer;
 
     static {
-        mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:4.4"))
-                .withExposedPorts(27017)
-                .withReuse(true); // Activer la réutilisation
-        mongoDBContainer.start();
-        System.setProperty("spring.data.mongodb.uri", mongoDBContainer.getReplicaSetUrl());
+        try {
+            mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:4.4"))
+                    .withExposedPorts(27017)
+                    .withReuse(true);
+            mongoDBContainer.start();
+            System.setProperty("spring.data.mongodb.uri", mongoDBContainer.getReplicaSetUrl());
+        } catch (Exception e) {
+            System.out.println("⚠️ TestContainers Docker not available. Falling back to local MongoDB.");
+            System.out.println("Error: " + e.getMessage());
+            // Fall back to local MongoDB on localhost:27017
+            System.setProperty("spring.data.mongodb.uri", "mongodb://localhost:27017/answer-service");
+        }
     }
 
     @Bean
