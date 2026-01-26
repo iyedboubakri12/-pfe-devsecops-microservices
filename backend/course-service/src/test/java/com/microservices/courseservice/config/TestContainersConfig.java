@@ -8,15 +8,15 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration
 public class TestContainersConfig {
 
-    private static final MySQLContainer<?> mySQLContainer;
+    private static MySQLContainer<?> mySQLContainer;
 
     static {
-        mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
-                .withDatabaseName("course-service")
-                .withUsername("test")
-                .withPassword("test")
-                .withReuse(true);
         try {
+            mySQLContainer = new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
+                    .withDatabaseName("course-service")
+                    .withUsername("test")
+                    .withPassword("test")
+                    .withReuse(true);
             mySQLContainer.start();
             System.setProperty("spring.datasource.url", mySQLContainer.getJdbcUrl());
             System.setProperty("spring.datasource.username", "test");
@@ -28,6 +28,7 @@ public class TestContainersConfig {
             System.setProperty("spring.datasource.username", "test");
             System.setProperty("spring.datasource.password", "test");
             System.setProperty("spring.jpa.hibernate.ddl-auto", "create-drop");
+            mySQLContainer = null;
         }
     }
 

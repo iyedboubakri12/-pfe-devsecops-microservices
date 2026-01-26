@@ -8,7 +8,7 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration
 public class TestContainersConfig {
 
-    private static final MongoDBContainer mongoDBContainer;
+    private static MongoDBContainer mongoDBContainer;
 
     static {
         try {
@@ -22,6 +22,7 @@ public class TestContainersConfig {
             System.out.println("Error: " + e.getMessage());
             // Fall back to local MongoDB on localhost:27017
             System.setProperty("spring.data.mongodb.uri", "mongodb://localhost:27017/answer-service");
+            mongoDBContainer = null;
         }
     }
 
