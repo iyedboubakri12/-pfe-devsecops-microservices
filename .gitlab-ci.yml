@@ -33,7 +33,7 @@ backend-tests:
   services:
     - mongo:4.4
     - mysql:8.0
-  environment:
+  variables:
     SPRING_DATA_MONGODB_URI: "mongodb://mongo:27017/answer-service"
     SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/test_db"
     SPRING_DATASOURCE_USERNAME: "root"
@@ -72,7 +72,7 @@ frontend-tests:
 sonarqube-sast:
   stage: security-scan
   image: maven:3.8.5-openjdk-17
-  needs: ["install-commons", "backend-tests", "frontend-tests"]
+  needs: ["install-commons", "backend-tests"]
   script:
     - cd backend
     - |
