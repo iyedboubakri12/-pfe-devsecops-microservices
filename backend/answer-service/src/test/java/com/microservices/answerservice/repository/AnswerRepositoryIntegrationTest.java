@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @DataMongoTest
 @Import(TestContainersConfig.class)
-@ActiveProfiles("test") // Added to load application-test.properties
+@ActiveProfiles("test-ci")
 public class AnswerRepositoryIntegrationTest {
 
     @Autowired

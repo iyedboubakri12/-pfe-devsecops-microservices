@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @SpringBootTest
 @Import(TestContainersConfig.class)
-@ActiveProfiles("test") // Added to load application-test.properties
+@ActiveProfiles("test-ci")
 public class AnswerServiceIntegrationTest {
 
     @Autowired
