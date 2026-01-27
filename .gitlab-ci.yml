@@ -30,35 +30,19 @@ backend-tests:
   stage: test-and-scan
   image: maven:3.8.5-openjdk-17
   needs: ["install-commons"]
-
-  services:
-    - mongo:4.4
-    - mysql:8.0
-
-  variables:
-    SPRING_DATA_MONGODB_URI: "mongodb://mongo:27017/answer-service"
-    SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/test_db"
-    SPRING_DATASOURCE_USERNAME: "root"
-    SPRING_DATASOURCE_PASSWORD: "root"
-
+  # ON A SUPPRIMÉ LES SERVICES MYSQL ET MONGO ICI POUR LIBÉRER LA RAM
   script:
-    - echo "Waiting for databases..."
-    - sleep 20
     - cd backend
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service; do
-        echo "Testing $service..."
-        (cd $service && mvn clean test -Dspring.profiles.active=test-ci $MAVEN_CLI_OPTS)
+        echo "🚀 Testing $service with In-Memory Databases..."
+        # On force l'utilisation du profil 'test-ci'
+        (cd $service && mvn test $MAVEN_CLI_OPTS -Dspring.profiles.active=test-ci)
       done
-
   artifacts:
     when: always
     paths:
-      - backend/**/target/site/jacoco/jacoco.xml
-      - backend/**/target/surefire-reports/
-    expire_in: 1 hour
-
-  allow_failure: true
+      - "backend/*/target/site/jacoco/jacoco.xml"
 
 frontend-tests:
   stage: test-and-scan
