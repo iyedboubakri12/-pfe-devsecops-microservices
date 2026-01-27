@@ -10,6 +10,7 @@ import com.microservices.examenservice.models.repository.SubjectRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test-integration")
 @EnableJpaRepositories(basePackages = "com.microservices.examenservice.models.repository")
 @Transactional
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 public class ExamServiceIntegrationTest {
 
     @Autowired

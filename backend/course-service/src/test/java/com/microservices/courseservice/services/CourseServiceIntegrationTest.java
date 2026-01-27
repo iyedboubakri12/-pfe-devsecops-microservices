@@ -10,6 +10,7 @@ import com.microservices.courseservice.clients.StudentFeignClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 @Testcontainers
 @Import(TestContainersConfig.class)
 @Transactional
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 public class CourseServiceIntegrationTest {
 
     @Autowired
