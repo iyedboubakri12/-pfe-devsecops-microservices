@@ -20,9 +20,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@ActiveProfiles("test-integration")
-@Testcontainers
-@Import(TestContainersConfig.class)
+@ActiveProfiles("test")
 public class ExamRepositoryIntegrationTest {
 
     @Autowired

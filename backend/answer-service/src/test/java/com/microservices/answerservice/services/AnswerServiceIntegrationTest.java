@@ -5,20 +5,20 @@ import com.microservices.answerservice.models.repository.AnswerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import com.microservices.answerservice.config.TestContainersConfig;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @SpringBootTest
-@Import(TestContainersConfig.class)
-@ActiveProfiles("test-ci")
+@ActiveProfiles("test-integration")
+
 public class AnswerServiceIntegrationTest {
 
     @Autowired
@@ -50,7 +50,8 @@ public class AnswerServiceIntegrationTest {
         Iterable<Answer> savedAnswers = answerService.saveAll(answers);
 
         assertThat(savedAnswers).hasSize(2);
-        assertThat(savedAnswers).extracting(Answer::getText).containsExactlyInAnyOrder("Answer 1", "Answer 2");
+        assertThat(savedAnswers).extracting(Answer::getText)
+                .containsExactlyInAnyOrder("Answer 1", "Answer 2");
     }
 
     @Test

@@ -1,6 +1,7 @@
 variables:
   GIT_DEPTH: "1"
   SONAR_HOST_URL: "http://192.168.168.129:9000"
+  # MAVEN_CLI_OPTS : On définit le repo local pour que tous les jobs partagent les mêmes JARs
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
 
 cache:
@@ -11,9 +12,10 @@ cache:
 
 stages:
   - build-shared
-  - test-and-scan
+  - test-unitaires
   - security-scan
 
+# 1. INSTALLATION DES MODULES COMMUNS (OBLIGATOIRE)
 install-commons:
   stage: build-shared
   image: maven:3.8.5-openjdk-17
@@ -23,24 +25,26 @@ install-commons:
     - cd ../common-exam && mvn install -DskipTests $MAVEN_CLI_OPTS
   artifacts:
     paths:
-      - .m2/repository/com/microservices/ 
+      - .m2/repository/com/microservices/ # On ne transfère que tes modules pour gagner du poids
     expire_in: 1 hour
 
+# 2. TESTS UNITAIRES BACKEND
 backend-tests:
-  stage: test-and-scan
+  stage: test-unitaires
   image: maven:3.8.5-openjdk-17
   needs: ["install-commons"]
   script:
     - cd backend
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service; do
-        echo "Testing $service with In-Memory Databases..."
-        (cd $service && mvn test $MAVEN_CLI_OPTS -Dspring.profiles.active=test-ci -Dmaven.test.failure.ignore=true)
+        echo "Testing $service..."
+        (cd $service && mvn test $MAVEN_CLI_OPTS -Dspring.profiles.active=test)
       done
   artifacts:
     when: always
     paths:
-      - "backend/*/target/site/jacoco/jacoco.xml"
+      - "backend/*/target/site/jacoco/jacoco.xml" 
+    expire_in: 1 hour
 
 frontend-tests:
   stage: test-and-scan

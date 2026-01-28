@@ -10,8 +10,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("test") // Utilise le profil "test" pour charger les propriétés spécifiques aux tests
-@EnableJpaRepositories("com.microservices.users.models.repository")
-@EntityScan("com.microservices.commonstudent.models.entity")
 public class UserServiceApplicationTests {
 
 	@MockBean

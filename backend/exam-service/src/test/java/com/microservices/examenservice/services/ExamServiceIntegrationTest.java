@@ -28,10 +28,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @SpringBootTest(classes = ExamServiceApplication.class)
-@Import(TestContainersConfig.class)
-@ActiveProfiles("test-integration")
+@ActiveProfiles("test")
 @EnableJpaRepositories(basePackages = "com.microservices.examenservice.models.repository")
 @Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)

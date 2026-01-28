@@ -6,27 +6,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import com.microservices.answerservice.config.TestContainersConfig;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-@Testcontainers
-@DataMongoTest
-@Import(TestContainersConfig.class)
-@ActiveProfiles("test-ci")
+@DataMongoTest // <--- Utilise ceci pour les tests de Repository Mongo, c'est plus léger
+@ActiveProfiles("test-integration")
 public class AnswerRepositoryIntegrationTest {
 
     @Autowired
     private AnswerRepository answerRepository;
-
-    @Autowired
-    private MongoDBContainer mongoDBContainer;
 
     @BeforeEach
     void setUp() {
@@ -42,7 +32,6 @@ public class AnswerRepositoryIntegrationTest {
         answer.setExamId(1L);
 
         Answer savedAnswer = answerRepository.save(answer);
-
         Answer foundAnswer = answerRepository.findById(savedAnswer.getId()).orElse(null);
 
         assertThat(foundAnswer).isNotNull();
@@ -71,6 +60,7 @@ public class AnswerRepositoryIntegrationTest {
         Iterable<Answer> answers = answerRepository.findAnswerByStudentByExam(1L, 1L);
 
         assertThat(answers).hasSize(2);
-        assertThat(answers).extracting(Answer::getText).containsExactlyInAnyOrder("Answer 1", "Answer 2");
+        assertThat(answers).extracting(Answer::getText)
+                .containsExactlyInAnyOrder("Answer 1", "Answer 2");
     }
 }

@@ -32,13 +32,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 
-@Testcontainers
 @SpringBootTest(classes = CourseServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestContainersConfig.class)
 @EnableAutoConfiguration(exclude = {
     org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration.class
 })
-@ActiveProfiles("test-integration")
+@ActiveProfiles("test-unit")
 public class CourseControllerIntegrationTest {
 
     @LocalServerPort

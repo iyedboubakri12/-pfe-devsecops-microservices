@@ -28,11 +28,10 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test-integration")
-@Import(TestContainersConfig.class)
+@ActiveProfiles("test")
 @Transactional
+
 public class StudentControllerIntegrationTest {
 
     private static final Logger log = LoggerFactory.getLogger(StudentControllerIntegrationTest.class);

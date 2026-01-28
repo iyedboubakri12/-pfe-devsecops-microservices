@@ -20,9 +20,7 @@ import javax.persistence.EntityManager;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = CourseServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test-integration")
-@Testcontainers
-@Import(TestContainersConfig.class)
+@ActiveProfiles("test-unit")
 @Transactional
 public class CourseRepositoryIntegrationTest {
 

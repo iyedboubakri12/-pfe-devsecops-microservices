@@ -1,31 +1,27 @@
 package com.microservices.answerservice.controllers;
 
 import com.microservices.answerservice.AnswerServiceApplication;
-import com.microservices.answerservice.config.TestContainersConfig;
 import com.microservices.answerservice.models.entity.Answer;
 import com.microservices.answerservice.models.repository.AnswerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @SpringBootTest(classes = AnswerServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestContainersConfig.class)
-@ActiveProfiles("test-ci")
+@ActiveProfiles("test-integration")
 public class AnswerControllerIntegrationTest {
 
     @LocalServerPort
@@ -42,12 +38,11 @@ public class AnswerControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         baseUrl = "http://localhost:" + port + "/answers";
-        // Supprimer deleteAll() pour éviter les timeouts
+        answerRepository.deleteAll();
     }
 
     @Test
     void shouldCreateAnswers() {
-        answerRepository.deleteAll(); // Déplacer ici pour réduire les appels
         Answer answer = new Answer();
         answer.setText("Sample answer");
         answer.setStudentId(1L);
@@ -63,7 +58,6 @@ public class AnswerControllerIntegrationTest {
 
     @Test
     void shouldGetAllAnswers() {
-        answerRepository.deleteAll();
         Answer answer = new Answer();
         answer.setText("Sample answer");
         answer.setStudentId(1L);
@@ -80,7 +74,6 @@ public class AnswerControllerIntegrationTest {
 
     @Test
     void shouldUpdateAnswer() {
-        answerRepository.deleteAll();
         Answer answer = new Answer();
         answer.setText("Old answer");
         answer.setStudentId(1L);
@@ -107,7 +100,6 @@ public class AnswerControllerIntegrationTest {
 
     @Test
     void shouldDeleteAnswer() {
-        answerRepository.deleteAll();
         Answer answer = new Answer();
         answer.setText("Sample answer");
         answer.setStudentId(1L);

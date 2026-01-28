@@ -16,10 +16,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @DataJpaTest
-@Import(TestContainersConfig.class)
-@ActiveProfiles("test-integration")
+@ActiveProfiles("test")
 public class StudentRepositoryIntegrationTest {
 
     @Autowired

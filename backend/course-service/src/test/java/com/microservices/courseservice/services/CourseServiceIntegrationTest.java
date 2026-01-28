@@ -28,9 +28,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 
 @SpringBootTest
-@ActiveProfiles("test-integration")
-@Testcontainers
-@Import(TestContainersConfig.class)
+@ActiveProfiles("test-unit")
 @Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 public class CourseServiceIntegrationTest {
@@ -58,14 +56,7 @@ public class CourseServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        jdbcTemplate.execute(
-                "CREATE TABLE IF NOT EXISTS courses_exams (" +
-                        "course_id BIGINT NOT NULL, " +
-                        "exam_id BIGINT NOT NULL, " +
-                        "PRIMARY KEY (course_id, exam_id), " +
-                        "FOREIGN KEY (course_id) REFERENCES courses(id), " +
-                        "FOREIGN KEY (exam_id) REFERENCES exams(id))"
-        );
+
         courseRepository.deleteAll();
         sampleCourse = new Course();
         sampleCourse.setName("Test Course");

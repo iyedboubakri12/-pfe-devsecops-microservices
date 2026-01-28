@@ -29,10 +29,8 @@ import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
 @SpringBootTest(classes = ExamServiceApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestContainersConfig.class)
-@ActiveProfiles("test-integration")
+@ActiveProfiles("test")
 public class ExamControllerIntegrationTest {
 
     @LocalServerPort
