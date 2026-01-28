@@ -104,14 +104,14 @@ sonarqube-backend:
 ############################
 sonarqube-frontend:
   stage: security-scan
-  image: node:18-alpine
+  image: sonarsource/sonar-scanner-cli:5
   needs: ["frontend-tests"]
-  script: |
-    cd frontend
-    npx sonar-scanner \
-      -Dsonar.projectKey=devsecops-frontend \
-      -Dsonar.sources=src \
-      -Dsonar.host.url=$SONAR_HOST_URL \
-      -Dsonar.login=$SONAR_TOKEN \
+  script:
+    - cd frontend
+    - sonar-scanner
+      -Dsonar.projectKey=devsecops-frontend
+      -Dsonar.sources=src
+      -Dsonar.host.url=$SONAR_HOST_URL
+      -Dsonar.login=$SONAR_TOKEN
       -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
   allow_failure: true
