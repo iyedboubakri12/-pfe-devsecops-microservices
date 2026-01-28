@@ -14,6 +14,7 @@ stages:
   - test-unitaires      
   - security-scan
 
+# 1. INSTALLATION DES MODULES COMMUNS (BACKEND)
 install-commons:
   stage: build-shared
   image: maven:3.8.5-openjdk-17
@@ -26,6 +27,7 @@ install-commons:
       - .m2/repository/com/microservices/ 
     expire_in: 1 hour
 
+# 2. TESTS UNITAIRES BACKEND (On force le passage pour avoir les rapports)
 backend-tests:
   stage: test-unitaires
   image: maven:3.8.5-openjdk-17
@@ -46,7 +48,7 @@ backend-tests:
 
 # 3. TESTS UNITAIRES FRONTEND (ANGULAR)
 frontend-tests:
-  stage: test-unitaires 
+  stage: test-unitaires # CORRIGÉ : utilise le bon stage
   image: node:18-alpine
   script:
     - cd frontend
@@ -78,6 +80,7 @@ sonarqube-sast:
           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml) || echo "Sonar failed for $service"
       done
     
+    # B. Analyse du Frontend (Nouveauté pour ton PFE)
     - echo "================ Analyse SAST : Frontend ================"
     - cd ../frontend
     - npx sonar-scanner \
