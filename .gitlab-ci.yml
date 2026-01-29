@@ -87,7 +87,7 @@ sonarqube-backend:
     for service in user-service exam-service answer-service course-service api-gateway-service eureka-service; do
       echo "========== Sonar Backend : $service =========="
       cd $service
-      mvn sonar:sonar $MAVEN_CLI_OPTS \
+      mvn verify sonar:sonar $MAVEN_CLI_OPTS \
         -Dsonar.projectKey=$service \
         -Dsonar.host.url=$SONAR_HOST_URL \
         -Dsonar.login=$SONAR_TOKEN \
