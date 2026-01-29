@@ -56,6 +56,7 @@ backend-tests:
   artifacts:
     when: always
     paths:
+      - backend/**/target/classes
       - backend/**/target/site/jacoco/jacoco.xml
     expire_in: 1 hour
 
@@ -82,13 +83,14 @@ frontend-tests:
 sonarqube-backend:
   stage: security-scan
   image: maven:3.8.5-openjdk-17
-  needs: ["backend-tests"]
+  needs:
+  - job: backend-tests
+    artifacts: true
   script: |
     cd backend
     for service in user-service exam-service answer-service course-service api-gateway-service eureka-service; do
       echo "========== Sonar Backend : $service =========="
       cd $service
-      mvn clean install -DskipTests $MAVEN_CLI_OPTS
       mvn sonar:sonar $MAVEN_CLI_OPTS \
         -Dsonar.projectKey=$service \
         -Dsonar.host.url=$SONAR_HOST_URL \
