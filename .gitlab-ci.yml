@@ -102,19 +102,21 @@ sonarqube-backend:
 ############################
 # 5️⃣ SONARQUBE FRONTEND
 ############################
-sonarqube-frontend:
+sonar-frontend:
   stage: security-scan
-  image: node:20-alpine
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
   needs: ["frontend-tests"]
   script:
-    - node -v
-    - npm install -g sonar-scanner
     - cd frontend
     - sonar-scanner \
         -Dsonar.projectKey=devsecops-frontend \
+        -Dsonar.projectName=devsecops-frontend \
+        -Dsonar.projectVersion=$CI_COMMIT_SHORT_SHA \
         -Dsonar.sources=src \
         -Dsonar.host.url=$SONAR_HOST_URL \
         -Dsonar.login=$SONAR_TOKEN \
-        -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-
+        -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+        -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts
   allow_failure: true
