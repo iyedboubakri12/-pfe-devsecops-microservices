@@ -104,13 +104,14 @@ sonarqube-backend:
 ############################
 sonar-frontend:
   stage: security-scan
-  image:
+  image: 
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
   needs: ["frontend-tests"]
   script:
     - cd frontend
-    - sonar-scanner \
+    - |
+      sonar-scanner \
         -Dsonar.projectKey=devsecops-frontend \
         -Dsonar.projectName=devsecops-frontend \
         -Dsonar.projectVersion=$CI_COMMIT_SHORT_SHA \
