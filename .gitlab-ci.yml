@@ -97,7 +97,7 @@ sonarqube-backend:
       cd ..
     done
   allow_failure: true
-  sca-scan-backend:
+sca-scan-backend:
   stage: security-scan
   image: maven:3.8.5-openjdk-17
   needs: ["backend-tests"]
