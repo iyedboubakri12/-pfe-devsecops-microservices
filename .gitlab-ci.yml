@@ -97,6 +97,21 @@ sonarqube-backend:
       cd ..
     done
   allow_failure: true
+  sca-scan-backend:
+  stage: security-scan
+  image: maven:3.8.5-openjdk-17
+  needs: ["backend-tests"]
+  script:
+    - cd backend
+    - for dir in api-gateway-service user-service exam-service course-service answer-service; do
+        echo "🔍 Scanning $dir..."
+        (cd $dir && mvn org.owasp:dependency-check-maven:check $MAVEN_CLI_OPTS -Dformat=HTML -DoutputDirectory=target) || echo "SCA failed for $dir"
+      done
+  artifacts:
+    when: always
+    paths:
+      - "backend/**/target/dependency-check-report.html"
+  allow_failure: true
 
 ############################
 # 5️⃣ SONARQUBE FRONTEND
@@ -120,3 +135,4 @@ sonar-frontend:
         -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
         -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts
   allow_failure: true
+  
