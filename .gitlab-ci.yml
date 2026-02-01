@@ -103,14 +103,21 @@ sca-scan-backend:
   needs: ["backend-tests"]
   script:
     - cd backend
-    - for dir in api-gateway-service user-service exam-service course-service answer-service; do
+    - |
+      for dir in api-gateway-service user-service exam-service course-service answer-service; do
         echo "🔍 Scanning $dir..."
-        (cd $dir && mvn org.owasp:dependency-check-maven:check $MAVEN_CLI_OPTS -Dformat=HTML -DoutputDirectory=target) || echo "SCA failed for $dir"
+        (
+          cd $dir && \
+          mvn org.owasp:dependency-check-maven:check \
+            $MAVEN_CLI_OPTS \
+            -Dformat=HTML \
+            -DoutputDirectory=target
+        ) || echo "SCA failed for $dir"
       done
   artifacts:
     when: always
     paths:
-      - "backend/**/target/dependency-check-report.html"
+      - backend/**/target/dependency-check-report.html
   allow_failure: true
 
 ############################
