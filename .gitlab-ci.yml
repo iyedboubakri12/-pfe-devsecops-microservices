@@ -142,4 +142,23 @@ sonar-frontend:
         -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
         -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts
   allow_failure: true
+sca-scan-frontend:
+  stage: security-scan
+  image: node:18-alpine
+  needs: ["frontend-tests"]
+  script:
+    - cd frontend
+    - echo "SCA Frontend — Analyse des dépendances NPM (npm audit)"
+    - npm ci --legacy-peer-deps
+    - npm audit --json > npm-audit-report.json || true
+    - npm audit > npm-audit-report.txt || true
+    - npm audit --production --audit-level=critical
+  artifacts:
+    when: always
+    paths:
+      - frontend/npm-audit-report.json
+      - frontend/npm-audit-report.txt
+    expire_in: 1 week
+  allow_failure: true
+
   
