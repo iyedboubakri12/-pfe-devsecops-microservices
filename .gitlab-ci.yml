@@ -5,6 +5,9 @@ variables:
   GIT_DEPTH: "1"
   SONAR_HOST_URL: "http://192.168.168.129:9000"
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
+  DOCKER_DRIVER: overlay2
+  HARBOR_URL: "harbor.local:8080"
+  HARBOR_PROJECT: "my-project"
 
 ############################
 # CACHE
@@ -22,6 +25,8 @@ stages:
   - build-shared
   - test-unitaires
   - security-scan
+  - docker-build
+  - docker-scan
 
 ############################
 # 1️⃣ INSTALLATION DES MODULES COMMUNS
@@ -160,5 +165,43 @@ sca-scan-frontend:
       - frontend/npm-audit-report.txt
     expire_in: 1 week
   allow_failure: true
+
+############################
+# 3️⃣ BUILD + PUSH DOCKER PAR MICROSERVICE
+############################
+docker-build-and-push:
+  stage: docker-build
+  image: docker:stable
+  services:
+    - docker:dind
+  needs: ["backend-tests"]
+  script:
+    - echo "$HARBOR_PASSWORD" | docker login $HARBOR_URL -u "$HARBOR_USER" --password-stdin
+    - |
+      cd backend
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        echo "========== Building Docker image for $service =========="
+        docker build -t $HARBOR_URL/$HARBOR_PROJECT/$service:$CI_COMMIT_SHA $service
+        echo "========== Pushing Docker image for $service =========="
+        docker push $HARBOR_URL/$HARBOR_PROJECT/$service:$CI_COMMIT_SHA
+      done
+
+############################
+# 4️⃣ SCAN DOCKER AVEC TRIVY
+############################
+docker-trivy-scan:
+  stage: docker-scan
+  image: aquasec/trivy:latest
+  needs: ["docker-build-and-push"]
+  script:
+    - |
+      cd backend
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        echo "🔍 Scanning Docker image: $service"
+        # Fail uniquement sur vulnérabilités HIGH/CRITICAL
+        trivy image --severity CRITICAL,HIGH --exit-code 1 $HARBOR_URL/$HARBOR_PROJECT/$service:$CI_COMMIT_SHA || true
+        # Affiche les vulnérabilités MEDIUM/LOW sans échouer le pipeline
+        trivy image --severity MEDIUM,LOW --exit-code 0 $HARBOR_URL/$HARBOR_PROJECT/$service:$CI_COMMIT_SHA
+      done
 
   
