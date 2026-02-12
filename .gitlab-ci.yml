@@ -171,11 +171,14 @@ sca-scan-frontend:
 ############################
 docker-build-and-push:
   stage: docker-build
-  image: docker:24
+  image: docker:stable
   services:
-    - docker:24-dind
+    - docker:24.0-dind
+      alias:docker
+      DOCKER_HOST:tcp://docker:2375
       command:["--insecure-registry=192.168.168.129:8443"]
   variables:
+    DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: ""
   script:
     - echo "$HARBOR_PASSWORD" | docker login 192.168.168.129:8443 -u "$HARBOR_USER" --password-stdin
