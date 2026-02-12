@@ -174,7 +174,7 @@ docker-build-and-push:
   image: docker:24
   services:
     - docker:24-dind
-      command: ["--insecure-registry=192.168.168.129:8443"]
+      command:["--insecure-registry=192.168.168.129:8443"]
   variables:
     DOCKER_TLS_CERTDIR: ""
   script:
