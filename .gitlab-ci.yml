@@ -198,6 +198,9 @@ docker-trivy-scan:
   image:
     name: aquasec/trivy:0.44.3
     entrypoint: [""]
+  services:
+    - name: docker:24.0.5-dind  # Provides the Docker daemon
+      alias: docker
   needs: ["docker-build-local"]
   script: |
     cd backend
