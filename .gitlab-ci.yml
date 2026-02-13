@@ -194,7 +194,7 @@ docker-build-local:
 # 9️⃣ SCAN DOCKER AVEC TRIVY
 ############################
 docker-trivy-scan:
-  stage: security
+  stage: docker-scan
   image: docker:24.0.5
   services:
     - docker:24.0.5-dind
@@ -212,6 +212,6 @@ docker-trivy-scan:
       - "*-trivy-report.html"
     expire_in: 1 week
   allow_failure: true
-    
+
 
 
