@@ -195,32 +195,39 @@ docker-build-local:
 ############################
 docker-trivy-scan:
   stage: docker-scan
-  image:
-    name: aquasec/trivy:0.44.3
-    entrypoint: [""]
+  image: docker:24.0.5 # Cette image POSSÈDE un terminal (sh)
   services:
-    - name: docker:24.0.5-dind  # Provides the Docker daemon
+    - name: docker:24.0.5-dind
       alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
   needs: ["docker-build-local"]
-  script: |
-    cd backend
-    for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-      echo "🔍 Scanning Docker image: $service"
-      trivy image --format template --template "@contrib/html.tpl" --output $service-trivy-report.html --severity CRITICAL,HIGH $service:latest || true
-      trivy image --format template --template "@contrib/html.tpl" --output $service-trivy-report-low.html --severity MEDIUM,LOW $service:latest || true
-    done
-    cd ../frontend
-    echo "🔍 Scanning Docker image: frontend"
-    trivy image --format template --template "@contrib/html.tpl" --output frontend-trivy-report.html --severity CRITICAL,HIGH frontend:latest || true
-    trivy image --format template --template "@contrib/html.tpl" --output frontend-trivy-report-low.html --severity MEDIUM,LOW frontend:latest || true
+  script:
+    # 1. Installer Trivy manuellement dans le conteneur
+    - apk add --no-cache curl
+    - curl -sfL https://raw.githubusercontent.com/aquasec/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+    
+    # 2. Lancer le scan sur le Backend
+    - cd backend
+    - |
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        echo "🔍 Scanning Docker image: $service"
+        # On génère le rapport HTML (Trivy télécharge les templates tout seul)
+        trivy image --format html --output ../${service}-trivy-report.html --severity CRITICAL,HIGH ${service}:latest || true
+      done
+    
+    # 3. Lancer le scan sur le Frontend
+    - cd ../frontend
+    - echo "🔍 Scanning Docker image: frontend"
+    - trivy image --format html --output ../frontend-trivy-report.html --severity CRITICAL,HIGH frontend:latest || true
+
   artifacts:
     when: always
     paths:
-      - backend/*-trivy-report*.html
-      - frontend-trivy-report*.html
+      - "*-trivy-report.html" # GitLab cherchera les fichiers à la racine du projet
     expire_in: 1 week
   allow_failure: true
-
 
 
 
