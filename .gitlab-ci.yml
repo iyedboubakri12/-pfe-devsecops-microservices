@@ -195,7 +195,7 @@ docker-build-local:
 ############################
 docker-trivy-scan:
   stage: docker-scan
-  image: 
+  image:
     name: aquasec/trivy:latest
     entrypoint: [""]   # <-- important
   needs: ["docker-build-local"]
@@ -203,13 +203,19 @@ docker-trivy-scan:
     cd backend
     for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
       echo "🔍 Scanning Docker image: $service"
-      trivy image --severity CRITICAL,HIGH --exit-code 1 $service:latest || true
-      trivy image --severity MEDIUM,LOW --exit-code 0 $service:latest
+      trivy image --format template --template "@contrib/html.tpl" --output $service-trivy-report.html --severity CRITICAL,HIGH $service:latest || true
+      trivy image --format template --template "@contrib/html.tpl" --output $service-trivy-report-low.html --severity MEDIUM,LOW $service:latest || true
     done
     cd ../frontend
     echo "🔍 Scanning Docker image: frontend"
-    trivy image --severity CRITICAL,HIGH --exit-code 1 frontend:latest || true
-    trivy image --severity MEDIUM,LOW --exit-code 0 frontend:latest
+    trivy image --format template --template "@contrib/html.tpl" --output frontend-trivy-report.html --severity CRITICAL,HIGH frontend:latest || true
+    trivy image --format template --template "@contrib/html.tpl" --output frontend-trivy-report-low.html --severity MEDIUM,LOW frontend:latest || true
+  artifacts:
+    when: always
+    paths:
+      - backend/*-trivy-report*.html
+      - frontend-trivy-report*.html
+    expire_in: 1 week
   allow_failure: true
 
 
