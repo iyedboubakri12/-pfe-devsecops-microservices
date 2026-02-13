@@ -197,7 +197,7 @@ docker-trivy-scan:
   stage: docker-scan
   image:
     name: aquasec/trivy:0.44.3
-    entrypoint: [""]   # <-- important
+    entrypoint: [""]
   needs: ["docker-build-local"]
   script: |
     cd backend
