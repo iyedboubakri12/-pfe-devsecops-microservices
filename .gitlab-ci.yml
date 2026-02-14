@@ -203,8 +203,10 @@ docker-build-local:
 ############################
 docker-trivy-scan:
   stage: docker-scan
-  image: aquasec/trivy:0.50.0
-  entrypoint: [""]
+
+  image:
+    name: aquasec/trivy:0.50.0
+    entrypoint: [""]
 
   needs:
     - docker-build-local
@@ -245,5 +247,3 @@ docker-trivy-scan:
     expire_in: 1 week
 
   allow_failure: true
-
-
