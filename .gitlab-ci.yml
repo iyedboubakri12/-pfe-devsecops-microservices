@@ -175,46 +175,75 @@ docker-build-local:
     - docker:24.0-dind
   variables:
     DOCKER_DRIVER: overlay2
-    # Désactive TLS pour éviter les problèmes de certificats
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://docker:2375
+
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
   script:
-    - docker info
     - cd backend
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-        echo "========== Building Docker image for $service =========="
+        echo "Building $service"
 
-        docker build -t $service:latest $service
+        IMAGE="$CI_REGISTRY_IMAGE/$service:$CI_COMMIT_SHORT_SHA"
+
+        docker build -t $IMAGE $service
+        docker push $IMAGE
       done
     - cd ../frontend
-    - docker build -t frontend:latest .
+    - IMAGE="$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA"
+    - docker build -t $IMAGE .
+    - docker push $IMAGE
+
 
 ############################
 # 9️⃣ SCAN DOCKER AVEC TRIVY
 ############################
 docker-trivy-scan:
   stage: docker-scan
-  image:
-    name:  image:aquasec/trivy:0.50.0
-    entrypoint: [""]
+  image: aquasec/trivy:0.50.0
+  entrypoint: [""]
 
   needs:
     - docker-build-local
 
   script:
-    - cd backend
-    - for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-        echo "Scanning $service";
-        trivy image --severity CRITICAL,HIGH --format table $service:latest || true;
+    - mkdir -p trivy-reports
+
+    - |
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        
+        IMAGE="$CI_REGISTRY_IMAGE/$service:$CI_COMMIT_SHORT_SHA"
+        REPORT="trivy-reports/trivy-report-$service.html"
+
+        echo "Scanning $IMAGE"
+
+        trivy image \
+          --severity CRITICAL,HIGH \
+          --format template \
+          --template "@contrib/html.tpl" \
+          -o $REPORT \
+          $IMAGE || true
+
       done
-    - cd ../frontend
-    - trivy image --severity CRITICAL,HIGH --format table frontend:latest || true
+
+    - |
+      IMAGE="$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA"
+
+      trivy image \
+        --severity CRITICAL,HIGH \
+        --format template \
+        --template "@contrib/html.tpl" \
+        -o trivy-reports/trivy-report-frontend.html \
+        $IMAGE || true
+
   artifacts:
     paths:
-      - "*-trivy-report.html"
+      - trivy-reports/
     expire_in: 1 week
-  allow_failure: true
 
+  allow_failure: true
 
 
