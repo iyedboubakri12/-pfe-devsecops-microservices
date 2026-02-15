@@ -189,13 +189,11 @@ docker-build:
     # Use a simple list to avoid shell expansion issues
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
-        # Remove any potential trailing whitespace/carriage returns
-        service=$(echo "$service" | tr -d '\r')
-        IMAGE_NAME="${REGISTRY_URL}/root/devsecops-project/${service}:latest"
-        echo "🔨 Building ${IMAGE_NAME}..."
-        # Ensure the path ./$service exists and is passed correctly
-        docker build -t "${IMAGE_NAME}" "./${service}"
-        docker push "${IMAGE_NAME}"
+      echo "🔨 Building $service..."
+      docker buildx build \
+        -t $REGISTRY_URL/root/devsecops-project/$service:latest \
+        --push \
+        ./$service
       done
 
     - cd ../frontend
