@@ -185,10 +185,8 @@ docker-build:
     DOCKER_TLS_CERTDIR: ""
     REGISTRY_URL: "192.168.168.129:5050"
   before_script:
-    # Connexion au registre local
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
   script:
-    # --- CONSTRUCTION DU BACKEND ---
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
@@ -199,8 +197,6 @@ docker-build:
         echo "🚀 Envoi vers le registre..."
         docker push $IMAGE_NAME
       done
-
-    # --- CONSTRUCTION DU FRONTEND ---
     - cd ../frontend
     - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
     - echo "🔨 Construction du Frontend : $IMAGE_FRONT"
