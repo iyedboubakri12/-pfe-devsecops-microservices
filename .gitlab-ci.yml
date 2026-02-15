@@ -179,44 +179,22 @@ docker-build-local:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://docker:2375
     REGISTRY_URL: "192.168.168.129:5050"
-    DOCKER_BUILDKIT: "0"  # Désactive buildx / BuildKit
+    DOCKER_BUILDKIT: "0"
   before_script:
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
   script: |
     docker info
 
-    # Backend
+    # Build & push backend
     for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-      IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/backend/$service:latest"
-      echo "========== Vérification ./backend/$service =========="
-      if [ ! -d "./backend/$service" ]; then
-        echo "❌ ./backend/$service n'existe pas !"
-        exit 1
-      fi
-      if [ ! -f "./backend/$service/Dockerfile" ]; then
-        echo "❌ Dockerfile manquant dans $service !"
-        exit 1
-      fi
-      echo "========== Building Docker image for $service =========="
-      docker build -t $IMAGE_NAME ./backend/$service
-      echo "🚀 Pushing $IMAGE_NAME to registry..."
-      docker push $IMAGE_NAME
+      IMAGE="$REGISTRY_URL/root/devsecops-project/backend/$service:latest"
+      docker build -t $IMAGE ./backend/$service
+      docker push $IMAGE
     done
 
-    # Frontend
+    # Build & push frontend
     IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend/frontend:latest"
-    echo "========== Vérification ./frontend =========="
-    if [ ! -d "./frontend" ]; then
-      echo "❌ ./frontend n'existe pas !"
-      exit 1
-    fi
-    if [ ! -f "./frontend/Dockerfile" ]; then
-      echo "❌ Dockerfile manquant dans frontend !"
-      exit 1
-    fi
-    echo "========== Building Docker image for frontend =========="
     docker build -t $IMAGE_FRONT ./frontend
-    echo "🚀 Pushing $IMAGE_FRONT to registry..."
     docker push $IMAGE_FRONT
 
 
