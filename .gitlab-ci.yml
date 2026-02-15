@@ -4,6 +4,7 @@
 variables:
   GIT_DEPTH: "1"
   SONAR_HOST_URL: "http://192.168.168.129:9000"
+  REGISTRY_URL: "192.168.168.129:5050"
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
   DOCKER_DRIVER: overlay2
   
