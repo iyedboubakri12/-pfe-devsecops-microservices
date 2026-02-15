@@ -187,14 +187,14 @@ docker-build:
   - cd backend
   - |
     for service in api-gateway-service user-service exam-service answer-service; do
-      IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/${service}:latest"
-      echo "🔨 Building ${IMAGE_NAME}"
+      IMAGE_NAME="${REGISTRY_URL}/root/devsecops-project/${service}:latest"
+      echo "Building ${IMAGE_NAME}"
       docker build -t "${IMAGE_NAME}" "./${service}"
       docker push "${IMAGE_NAME}"
     done
 
   - cd ../frontend
-  - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
+  - IMAGE_FRONT="${REGISTRY_URL}/root/devsecops-project/frontend:latest"
   - docker build -t "${IMAGE_FRONT}" .
   - docker push "${IMAGE_FRONT}"
 
