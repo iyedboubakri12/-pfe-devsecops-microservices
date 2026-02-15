@@ -181,25 +181,30 @@ docker-build:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
-    DOCKER_BUILDKIT: "0"
+    DOCKER_BUILDKIT: "0" # On le laisse à 0 pour une meilleure compatibilité en local
   before_script:
+    # On se connecte au registre sans le http:// pour éviter l'erreur unauthorized
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
   script:
+    # --- PARTIE BACKEND ---
     - cd backend
-    # Use a simple list to avoid shell expansion issues
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
-      echo "🔨 Building $service..."
-      docker buildx build \
-        -t $REGISTRY_URL/root/devsecops-project/$service:latest \
-        --push \
-        ./$service
+        echo "🔨 Building $service with Dockerfile..."
+        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
+        # Utilisation de -f pour pointer le Dockerfile à l'intérieur du dossier
+        docker build -t $IMAGE_NAME -f ./$service/Dockerfile ./$service
+        echo "🚀 Pushing $IMAGE_NAME..."
+        docker push $IMAGE_NAME
       done
 
+    # --- PARTIE FRONTEND ---
     - cd ../frontend
     - IMAGE_FRONT="${REGISTRY_URL}/root/devsecops-project/frontend:latest"
-    - echo "🔨 Building ${IMAGE_FRONT}..."
-    - docker build -t "${IMAGE_FRONT}" .
+    - echo "🔨 Building Frontend with -f flag..."
+    # Ici, on précise explicitement -f Dockerfile
+    - docker build -t "${IMAGE_FRONT}" -f Dockerfile .
+    - echo "🚀 Pushing ${IMAGE_FRONT}..."
     - docker push "${IMAGE_FRONT}"
 
 ############################
