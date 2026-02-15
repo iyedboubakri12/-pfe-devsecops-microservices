@@ -166,85 +166,50 @@ sca-scan-frontend:
   allow_failure: true
 
 ############################
-# 8️⃣ BUILD LOCAL DOCKER IMAGES
+# 8️⃣ BUILD & PUSH TO REGISTRY
 ############################
-docker-build-local:
+docker-build:
   stage: docker-build
-  image: docker:24.0
+  image: docker:24.0.5
   services:
-    - docker:24.0-dind
+    - name: docker:24.0.5-dind
+      alias: docker
   variables:
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://docker:2375
-
   before_script:
-    - echo "CI_REGISTRY=$CI_REGISTRY"
-    - echo "CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE"
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
-
   script:
     - cd backend
     - |
-      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-        echo "Building $service"
-
-        IMAGE="$CI_REGISTRY_IMAGE/$service:$CI_COMMIT_SHORT_SHA"
-
-        docker build -t $IMAGE $service
-        docker push $IMAGE
+      for service in api-gateway-service user-service exam-service answer-service; do
+        echo "🔨 Building $service..."
+        IMAGE_NAME="$CI_REGISTRY_IMAGE/$service:latest"
+        docker build -t $IMAGE_NAME ./$service
+        docker push $IMAGE_NAME
       done
     - cd ../frontend
-    - IMAGE="$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA"
-    - docker build -t $IMAGE .
-    - docker push $IMAGE
-
+    - docker build -t $CI_REGISTRY_IMAGE/frontend:latest .
+    - docker push $CI_REGISTRY_IMAGE/frontend:latest
 
 ############################
-# 9️⃣ SCAN DOCKER AVEC TRIVY
+# 9️⃣ SCAN DES IMAGES AVEC TRIVY
 ############################
-docker-trivy-scan:
+container-scan:
   stage: docker-scan
-
-  image:
-    name: aquasec/trivy:0.50.0
-    
-  needs:
-    - docker-build-local
-
+  image: 
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  needs: ["docker-build"]
+  variables:
+    TRIVY_INSECURE: "true" # Car on est en HTTP local
   script:
-    - mkdir -p trivy-reports
-
+    - mkdir -p reports
     - |
-      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-        
-        IMAGE="$CI_REGISTRY_IMAGE/$service:$CI_COMMIT_SHORT_SHA"
-        REPORT="trivy-reports/trivy-report-$service.html"
-
-        echo "Scanning $IMAGE"
-
-        trivy image \
-          --severity CRITICAL,HIGH \
-          --format template \
-          --template "@contrib/html.tpl" \
-          -o $REPORT \
-          $IMAGE || true
-
+      for service in api-gateway-service user-service exam-service answer-service frontend; do
+        echo "🛡️ Scanning $service..."
+        trivy image --format html --output reports/$service-trivy.html $CI_REGISTRY_IMAGE/$service:latest || true
       done
-
-    - |
-      IMAGE="$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA"
-
-      trivy image \
-        --severity CRITICAL,HIGH \
-        --format template \
-        --template "@contrib/html.tpl" \
-        -o trivy-reports/trivy-report-frontend.html \
-        $IMAGE || true
-
   artifacts:
+    when: always
     paths:
-      - trivy-reports/
-    expire_in: 1 week
-
-  allow_failure: true
+      - reports/
