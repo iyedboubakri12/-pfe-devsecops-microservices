@@ -169,35 +169,26 @@ sca-scan-frontend:
 ############################
 # 8️⃣ BUILD & PUSH TO REGISTRY (CORRIGÉ)
 ############################
-docker-build:
+docker-build-local:
   stage: docker-build
-  image: docker:24.0.5
+  image: docker:24.0
   services:
-    - name: docker:24.0.5-dind
-      alias: docker
-      command: ["--insecure-registry=192.168.168.129:5050"]
+    - docker:24.0-dind
   variables:
-    DOCKER_HOST: tcp://docker:2375
+    DOCKER_DRIVER: overlay2
+    # Désactive TLS pour éviter les problèmes de certificats
     DOCKER_TLS_CERTDIR: ""
-    REGISTRY_URL: "192.168.168.129:5050"
-  before_script:
-    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
-  script: |
-    cd backend
-    for service in api-gateway-service user-service exam-service answer-service; do
-      IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
-      echo "🔨 Construction de l'image : $IMAGE_NAME"
-      docker build -t $IMAGE_NAME -f ./$service/Dockerfile ./$service
-      echo "🚀 Envoi vers le registre..."
-      docker push $IMAGE_NAME
-    done
-
-    cd ../frontend
-    IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
-    echo "🔨 Construction du Frontend : $IMAGE_FRONT"
-    docker build -t $IMAGE_FRONT -f Dockerfile .
-    docker push $IMAGE_FRONT
-
+    DOCKER_HOST: tcp://docker:2375
+  script:
+    - docker info
+    - cd backend
+    - |
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        echo "========== Building Docker image for $service =========="
+        docker build -t $service:latest $service
+      done
+    - cd ../frontend
+    - docker build -t frontend:latest .
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
