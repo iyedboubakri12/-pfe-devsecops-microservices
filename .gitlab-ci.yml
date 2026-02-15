@@ -174,28 +174,28 @@ docker-build:
   services:
     - name: docker:24.0.5-dind
       alias: docker
-      # On autorise explicitement le registre HTTP local
+      # On garde l'IP:Port ici pour autoriser le HTTP
       command: ["--insecure-registry=192.168.168.129:5050"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
   before_script:
-    # On force le login en utilisant l'URL HTTP
-    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin http://$REGISTRY_URL
+    # ⚠️ CORRECTION ICI : Pas de "http://" devant l'IP
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin 192.168.168.129:5050
   script:
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
-        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
+        # On définit le nom de l'image (sans http://)
+        IMAGE_NAME="192.168.168.129:5050/root/devsecops-project/$service:latest"
         echo "🔨 Building $IMAGE_NAME..."
         docker build -t $IMAGE_NAME ./$service
         docker push $IMAGE_NAME
       done
     - cd ../frontend
-    - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
+    - IMAGE_FRONT="192.168.168.129:5050/root/devsecops-project/frontend:latest"
     - docker build -t $IMAGE_FRONT .
     - docker push $IMAGE_FRONT
-
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
