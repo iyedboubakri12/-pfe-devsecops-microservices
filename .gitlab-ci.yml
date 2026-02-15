@@ -176,7 +176,6 @@ docker-build-local:
     - docker:24.0-dind
   variables:
     DOCKER_DRIVER: overlay2
-    # Désactive TLS pour éviter les problèmes de certificats
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://docker:2375
   script:
@@ -199,8 +198,7 @@ container-scan:
     entrypoint: [""]
   needs: ["docker-build-local"]
   variables:
-    TRIVY_INSECURE: "true" # Autorise le scan sur un registre sans SSL
-    # Authentification pour que Trivy puisse tirer l'image
+    TRIVY_INSECURE: "true"
     TRIVY_USERNAME: "gitlab-ci-token"
     TRIVY_PASSWORD: "$CI_JOB_TOKEN"
   script:
