@@ -178,38 +178,34 @@ docker-build:
   services:
     - name: docker:24.0.5-dind
       alias: docker
-      # Autorise le démon Docker à accepter le registre local sans HTTPS
+      # On autorise le moteur Docker à accepter ton adresse IP locale sans HTTPS
       command: ["--insecure-registry=192.168.168.129:5050"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
-    DOCKER_BUILDKIT: "0" 
   before_script:
-    # Login au registre local (sans http:// dans l'adresse)
+    # Connexion au registre local
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
   script:
-    # --- BUILD BACKEND ---
+    # --- CONSTRUCTION DU BACKEND ---
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
         IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
-        echo "🔨 Building $service with Dockerfile..."
-        # On utilise docker build standard avec -f
+        echo "🔨 Construction de l'image : $IMAGE_NAME"
+        # Commande standard sans buildx
         docker build -t $IMAGE_NAME -f ./$service/Dockerfile ./$service
-        echo "🚀 Pushing $IMAGE_NAME..."
+        echo "🚀 Envoi vers le registre..."
         docker push $IMAGE_NAME
       done
 
-    # --- BUILD FRONTEND ---
+    # --- CONSTRUCTION DU FRONTEND ---
     - cd ../frontend
-    - IMAGE_FRONT="${REGISTRY_URL}/root/devsecops-project/frontend:latest"
-    - echo "🔨 Building Frontend with -f flag..."
-    - docker build -t "${IMAGE_FRONT}" -f Dockerfile .
-    - echo "🚀 Pushing ${IMAGE_FRONT}..."
-    - docker push "${IMAGE_FRONT}""
-
+    - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
+    - echo "🔨 Construction du Frontend : $IMAGE_FRONT"
+    - docker build -t $IMAGE_FRONT -f Dockerfile .
+    - docker push $IMAGE_FRONT
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
