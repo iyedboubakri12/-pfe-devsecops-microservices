@@ -182,23 +182,27 @@ docker-build-local:
   before_script:
     # Connexion au registre avec token GitLab CI
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
-  script:
-    - docker info
-    - cd backend
-    - |
-      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
-        echo "========== Building Docker image for $service =========="
-        docker build -t $IMAGE_NAME $service
-        echo "🚀 Pushing $IMAGE_NAME to registry..."
-        docker push $IMAGE_NAME
-      done
-    - cd ../frontend
-    - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
-    - echo "========== Building Docker image for frontend =========="
-    - docker build -t $IMAGE_FRONT .
-    - echo "🚀 Pushing $IMAGE_FRONT to registry..."
-    - docker push $IMAGE_FRONT
+  script: |
+    docker info
+
+    # ----- Backend -----
+    cd backend
+    for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+      IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
+      echo "========== Building Docker image for $service =========="
+      docker build -t $IMAGE_NAME -f ./backend/$service/Dockerfile ./backend/$service
+      echo "🚀 Pushing $IMAGE_NAME to registry..."
+      docker push $IMAGE_NAME
+    done
+
+    # ----- Frontend -----
+    cd ../frontend
+    IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
+    echo "========== Building Docker image for frontend =========="
+    docker build -t $IMAGE_FRONT -f ./frontend/Dockerfile ./frontend
+    echo "🚀 Pushing $IMAGE_FRONT to registry..."
+    docker push $IMAGE_FRONT
+
 
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
