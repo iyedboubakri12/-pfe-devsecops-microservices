@@ -171,9 +171,9 @@ sca-scan-frontend:
 ############################
 docker-build:
   stage: docker-build
-  image: docker:24.0
+  image: docker:24.0.5
   services:
-    - name: docker:24.0-dind
+    - name: docker:24.0.5-dind
       alias: docker
       command: ["--insecure-registry=192.168.168.129:5050"]
   variables:
@@ -182,21 +182,26 @@ docker-build:
     DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
   before_script:
-    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
   script:
-  - cd backend
-  - |
-    for service in api-gateway-service user-service exam-service answer-service; do
-      IMAGE_NAME="${REGISTRY_URL}/root/devsecops-project/${service}:latest"
-      echo "Building ${IMAGE_NAME}"
-      docker build -t "${IMAGE_NAME}" "./${service}"
-      docker push "${IMAGE_NAME}"
-    done
+    - cd backend
+    # Use a simple list to avoid shell expansion issues
+    - |
+      for service in api-gateway-service user-service exam-service answer-service; do
+        # Remove any potential trailing whitespace/carriage returns
+        service=$(echo "$service" | tr -d '\r')
+        IMAGE_NAME="${REGISTRY_URL}/root/devsecops-project/${service}:latest"
+        echo "🔨 Building ${IMAGE_NAME}..."
+        # Ensure the path ./$service exists and is passed correctly
+        docker build -t "${IMAGE_NAME}" "./${service}"
+        docker push "${IMAGE_NAME}"
+      done
 
-  - cd ../frontend
-  - IMAGE_FRONT="${REGISTRY_URL}/root/devsecops-project/frontend:latest"
-  - docker build -t "${IMAGE_FRONT}" .
-  - docker push "${IMAGE_FRONT}"
+    - cd ../frontend
+    - IMAGE_FRONT="${REGISTRY_URL}/root/devsecops-project/frontend:latest"
+    - echo "🔨 Building ${IMAGE_FRONT}..."
+    - docker build -t "${IMAGE_FRONT}" .
+    - docker push "${IMAGE_FRONT}"
 
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
