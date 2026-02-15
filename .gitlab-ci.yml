@@ -197,7 +197,7 @@ container-scan:
   image: 
     name: aquasec/trivy:latest
     entrypoint: [""]
-  needs: ["docker-build"]
+  needs: ["docker-build-local"]
   variables:
     TRIVY_INSECURE: "true" # Autorise le scan sur un registre sans SSL
     # Authentification pour que Trivy puisse tirer l'image
