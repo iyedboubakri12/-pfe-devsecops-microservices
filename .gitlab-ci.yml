@@ -169,43 +169,46 @@ sca-scan-frontend:
 ############################
 # 8️⃣ BUILD & PUSH TO REGISTRY (CORRIGÉ)
 ############################
+############################
+# 8️⃣ BUILD & PUSH TO REGISTRY (Standard Docker Build)
+############################
 docker-build:
   stage: docker-build
   image: docker:24.0.5
   services:
     - name: docker:24.0.5-dind
       alias: docker
+      # Autorise le démon Docker à accepter le registre local sans HTTPS
       command: ["--insecure-registry=192.168.168.129:5050"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
-    DOCKER_BUILDKIT: "0" # On le laisse à 0 pour une meilleure compatibilité en local
+    DOCKER_BUILDKIT: "0" 
   before_script:
-    # On se connecte au registre sans le http:// pour éviter l'erreur unauthorized
+    # Login au registre local (sans http:// dans l'adresse)
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
   script:
-    # --- PARTIE BACKEND ---
+    # --- BUILD BACKEND ---
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
-        echo "🔨 Building $service with Dockerfile..."
         IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
-        # Utilisation de -f pour pointer le Dockerfile à l'intérieur du dossier
+        echo "🔨 Building $service with Dockerfile..."
+        # On utilise docker build standard avec -f
         docker build -t $IMAGE_NAME -f ./$service/Dockerfile ./$service
         echo "🚀 Pushing $IMAGE_NAME..."
         docker push $IMAGE_NAME
       done
 
-    # --- PARTIE FRONTEND ---
+    # --- BUILD FRONTEND ---
     - cd ../frontend
     - IMAGE_FRONT="${REGISTRY_URL}/root/devsecops-project/frontend:latest"
     - echo "🔨 Building Frontend with -f flag..."
-    # Ici, on précise explicitement -f Dockerfile
     - docker build -t "${IMAGE_FRONT}" -f Dockerfile .
     - echo "🚀 Pushing ${IMAGE_FRONT}..."
-    - docker push "${IMAGE_FRONT}"
+    - docker push "${IMAGE_FRONT}""
 
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
