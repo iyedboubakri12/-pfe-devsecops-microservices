@@ -178,16 +178,28 @@ docker-build-local:
     DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://docker:2375
+    REGISTRY_URL: "192.168.168.129:5050"
+  before_script:
+    # Connexion au registre avec token GitLab CI
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
   script:
     - docker info
     - cd backend
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
         echo "========== Building Docker image for $service =========="
-        docker build -t $service:latest $service
+        docker build -t $IMAGE_NAME $service
+        echo "🚀 Pushing $IMAGE_NAME to registry..."
+        docker push $IMAGE_NAME
       done
     - cd ../frontend
-    - docker build -t frontend:latest .
+    - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
+    - echo "========== Building Docker image for frontend =========="
+    - docker build -t $IMAGE_FRONT .
+    - echo "🚀 Pushing $IMAGE_FRONT to registry..."
+    - docker push $IMAGE_FRONT
+
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
@@ -198,7 +210,8 @@ container-scan:
     entrypoint: [""]
   needs: ["docker-build-local"]
   variables:
-    TRIVY_INSECURE: "true"
+    TRIVY_INSECURE: "true" # Autorise le scan sur un registre sans SSL
+    # Authentification pour que Trivy puisse tirer l'image
     TRIVY_USERNAME: "gitlab-ci-token"
     TRIVY_PASSWORD: "$CI_JOB_TOKEN"
   script:
