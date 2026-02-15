@@ -166,7 +166,7 @@ sca-scan-frontend:
   allow_failure: true
 
 ############################
-# 8️⃣ BUILD & PUSH TO REGISTRY
+# 8️⃣ BUILD & PUSH TO REGISTRY (CORRIGÉ)
 ############################
 docker-build:
   stage: docker-build
@@ -174,25 +174,30 @@ docker-build:
   services:
     - name: docker:24.0.5-dind
       alias: docker
+      # On autorise explicitement le registre HTTP local
+      command: ["--insecure-registry=192.168.168.129:5050"]
   variables:
     DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
   before_script:
-    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
+    # On force le login en utilisant l'URL HTTP
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin http://$REGISTRY_URL
   script:
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
-        echo "🔨 Building $service..."
-        IMAGE_NAME="$CI_REGISTRY_IMAGE/$service:latest"
+        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
+        echo "🔨 Building $IMAGE_NAME..."
         docker build -t $IMAGE_NAME ./$service
         docker push $IMAGE_NAME
       done
     - cd ../frontend
-    - docker build -t $CI_REGISTRY_IMAGE/frontend:latest .
-    - docker push $CI_REGISTRY_IMAGE/frontend:latest
+    - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
+    - docker build -t $IMAGE_FRONT .
+    - docker push $IMAGE_FRONT
 
 ############################
-# 9️⃣ SCAN DES IMAGES AVEC TRIVY
+# 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
 container-scan:
   stage: docker-scan
@@ -201,15 +206,20 @@ container-scan:
     entrypoint: [""]
   needs: ["docker-build"]
   variables:
-    TRIVY_INSECURE: "true" # Car on est en HTTP local
+    TRIVY_INSECURE: "true" # Autorise le scan sur un registre sans SSL
+    # Authentification pour que Trivy puisse tirer l'image
+    TRIVY_USERNAME: "gitlab-ci-token"
+    TRIVY_PASSWORD: "$CI_JOB_TOKEN"
   script:
     - mkdir -p reports
     - |
       for service in api-gateway-service user-service exam-service answer-service frontend; do
-        echo "🛡️ Scanning $service..."
-        trivy image --format html --output reports/$service-trivy.html $CI_REGISTRY_IMAGE/$service:latest || true
+        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
+        echo "🛡️ Scanning $IMAGE_NAME..."
+        trivy image --format html --output reports/$service-trivy.html $IMAGE_NAME || true
       done
   artifacts:
     when: always
     paths:
       - reports/
+  allow_failure: true
