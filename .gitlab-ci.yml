@@ -182,8 +182,6 @@ docker-build:
     # Define the registry here to reuse it and avoid typos
     CI_REGISTRY: "192.168.168.129:5050" 
   before_script:
-    # Use the variable without http://
-    before_script:
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
 
   script:
