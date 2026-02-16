@@ -178,24 +178,16 @@ docker-build-local:
     DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://docker:2375
-    REGISTRY_URL: "192.168.168.129:5050"
-    DOCKER_BUILDKIT: "0"
-  before_script:
-    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$REGISTRY_URL"
-  script: |
-    docker info
-
-    # Build & push backend
-    for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-      IMAGE="$REGISTRY_URL/root/devsecops-project/backend/$service:latest"
-      docker build -t $IMAGE ./backend/$service
-      docker push $IMAGE
-    done
-
-    # Build & push frontend
-    IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend/frontend:latest"
-    docker build -t $IMAGE_FRONT ./frontend
-    docker push $IMAGE_FRONT
+  script:
+    - docker info
+    - cd backend
+    - |
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        echo "========== Building Docker image for $service =========="
+        docker build -t $service:latest $service
+      done
+    - cd ../frontend
+    - docker build -t frontend:latest .
 
 
 ############################
