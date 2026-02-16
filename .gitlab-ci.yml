@@ -199,11 +199,11 @@ container-scan:
   needs: ["docker-build-local"]
   script:
     - mkdir -p reports
+    - docker images
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service frontend; do
         echo "🛡️ Scanning $service:latest..."
-        trivy image --format html --output reports/$service-trivy.html $service:latest || true
-      done
+        trivy image --format html --output reports/$service-trivy.html $service:latest || echo "<html><body>No image found for $service</body></html>" > reports/$service-trivy.html
   artifacts:
     when: always
     paths:
