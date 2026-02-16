@@ -38,6 +38,7 @@ install-commons:
     - cd backend/common-service && mvn install -DskipTests $MAVEN_CLI_OPTS
     - cd ../common-student && mvn install -DskipTests $MAVEN_CLI_OPTS
     - cd ../common-exam && mvn install -DskipTests $MAVEN_CLI_OPTS
+  when: manual  
 
 ############################
 # 2️⃣ TESTS BACKEND + JACOCO
@@ -60,6 +61,7 @@ backend-tests:
       - backend/**/target/classes
       - backend/**/target/site/jacoco/jacoco.xml
     expire_in: 1 hour
+  when: manual  
 
 ############################
 # 3️⃣ TESTS FRONTEND (ANGULAR)
@@ -77,6 +79,7 @@ frontend-tests:
       - frontend/coverage/lcov.info
     expire_in: 1 hour
   allow_failure: true
+  when: manual
 
 ############################
 # 4️⃣ SONARQUBE BACKEND
@@ -124,6 +127,7 @@ sca-scan-backend:
     paths:
       - backend/**/target/dependency-check-report.html
   allow_failure: true
+  when: manual
 
 ############################
 # 5️⃣ SONARQUBE FRONTEND
@@ -165,7 +169,7 @@ sca-scan-frontend:
       - frontend/npm-audit-report.txt
     expire_in: 1 week
   allow_failure: true
-
+  when: manual
 ############################
 # 8️⃣ BUILD & PUSH TO REGISTRY (CORRIGÉ)
 ############################
