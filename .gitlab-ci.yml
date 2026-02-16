@@ -199,6 +199,7 @@ container_scan:
   when: manual
   allow_failure: true
   script:
+    # Créer le dossier des rapports
     - mkdir -p reports/backend
 
     # Scanner chaque microservice backend
@@ -206,8 +207,10 @@ container_scan:
       for service in backend/answer-service backend/api-gateway-service backend/user-service backend/exam-service; do
         echo "🔍 Scan de $service..."
         if [ -d "$service" ]; then
-          trivy fs "$service" --severity HIGH,CRITICAL --format json --output reports/backend/$(basename $service)-trivy-report.json || true
+          # Analyse filesystem avec Trivy et génération d'un rapport JSON
+          trivy fs "$service" --severity HIGH,CRITICAL --format json --output reports/backend/$(basename $service)-trivy-report.json || echo "{}" > reports/backend/$(basename $service)-trivy-report.json
         else
+          # Si le dossier n'existe pas, créer un JSON vide
           echo "{}" > reports/backend/$(basename $service)-trivy-report.json
         fi
       done
@@ -217,6 +220,7 @@ container_scan:
     paths:
       - reports/backend/
     expire_in: 1 week
+
   only:
     - develop
     - main
