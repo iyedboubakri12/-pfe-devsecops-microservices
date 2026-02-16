@@ -194,7 +194,6 @@ docker-build-local:
     - docker buildx create --use --name mybuilder
     - docker buildx inspect --bootstrap
   script:
-    script:
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
