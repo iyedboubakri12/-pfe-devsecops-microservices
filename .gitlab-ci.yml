@@ -173,43 +173,53 @@ sca-scan-frontend:
 ############################
 # 8️⃣ BUILD & PUSH TO REGISTRY (CORRIGÉ)
 ############################
+stages:
+  - docker-build
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+  REGISTRY_URL: "http://192.168.168.129:5050"
+  BACKEND_SERVICES: "api-gateway-service user-service exam-service answer-service"
+
 docker-build-local:
   stage: docker-build
   image: docker:24.0
   services:
     - name: docker:24.0-dind
       alias: docker
-      command: ["--insecure-registry=$REGISTRY_URL", "--host=tcp://0.0.0.0:2375"]
+      privileged: true
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
       - backend/.m2/
       - frontend/node_modules/
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
-    REGISTRY_URL: "192.168.168.129:5050"
-    BACKEND_SERVICES: "api-gateway-service user-service exam-service answer-service"
-    
   before_script:
-    # Login au registry GitLab
-    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
-    # Attente pour DIND
-    - echo "⏳ Waiting for Docker-in-Docker to start..."
-    - sleep 25
-    # Installer QEMU pour multi-arch
+    # Attente dynamique pour Docker-in-Docker
+    - |
+      echo "⏳ Waiting for Docker-in-Docker to start..."
+      until docker info >/dev/null 2>&1; do
+        sleep 5
+      done
+
+    # Installer QEMU pour build multi-arch
     - docker run --privileged --rm tonistiigi/binfmt --install all
+
     # Créer le builder Buildx
     - docker buildx create --use --name mybuilder
     - docker buildx inspect --bootstrap
+
+    # Login au registry HTTP
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
+
   script:
     # Build backend services
     - cd backend
     - |
       for service in $BACKEND_SERVICES; do
-        IMAGE_NAME="$(echo -n "${REGISTRY_URL}/root/devsecops-project/${service}:latest")"
-        IMAGE_SHA="$(echo -n "${REGISTRY_URL}/root/devsecops-project/${service}:${CI_COMMIT_SHA}")"
+        IMAGE_NAME="${REGISTRY_URL}/root/devsecops-project/${service}:latest"
+        IMAGE_SHA="${REGISTRY_URL}/root/devsecops-project/${service}:${CI_COMMIT_SHA}"
         echo "🔨 Building $service..."
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
@@ -222,8 +232,8 @@ docker-build-local:
     # Build frontend
     - cd ../frontend
     - |
-      IMAGE_FRONT="$(echo -n "${REGISTRY_URL}/root/devsecops-project/frontend:latest")"
-      IMAGE_FRONT_SHA="$(echo -n "${REGISTRY_URL}/root/devsecops-project/frontend:${CI_COMMIT_SHA}")"
+      IMAGE_FRONT="${REGISTRY_URL}/root/devsecops-project/frontend:latest"
+      IMAGE_FRONT_SHA="${REGISTRY_URL}/root/devsecops-project/frontend:${CI_COMMIT_SHA}"
       echo "🔨 Building frontend..."
       docker buildx build \
         --platform linux/amd64,linux/arm64 \
@@ -231,9 +241,11 @@ docker-build-local:
         --tag "$IMAGE_FRONT" \
         --tag "$IMAGE_FRONT_SHA" \
         .
+
   after_script:
     # Nettoyage du builder
     - docker buildx rm mybuilder || true
+
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
