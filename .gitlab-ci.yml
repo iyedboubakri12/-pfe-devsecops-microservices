@@ -186,43 +186,28 @@ docker-build-local:
     DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
   before_script:
-    # Login au registry GitLab
+    # Login au registry
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
-    # Attendre que DIND soit prêt
-    - echo "⏳ Waiting for Docker-in-Docker to start..."
-    - sleep 20
-    # Créer un builder Buildx
+    # Installation de QEMU pour le support multi-architecture (indispensable pour arm64)
+    - docker run --privileged --rm tonistiigi/binfmt --install all
+    # Création du builder buildx
     - docker buildx create --use --name mybuilder
     - docker buildx inspect --bootstrap
   script:
-    # Build et push de chaque service backend
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
-        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
-        echo "🔨 Building $IMAGE_NAME..."
+        IMAGE_NAME="${REGISTRY_URL}/root/devsecops-project/${service}:latest"
+        echo "🔨 Building and pushing $IMAGE_NAME..."
+        # Utilisation de guillemets pour sécuriser les variables et point final pour le contexte
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
-          --tag $IMAGE_NAME \
-          ./$service
+          --tag "$IMAGE_NAME" \
+          "./$service"
       done
-
-    # Build et push du frontend
-    - cd ../frontend
-    - |
-      IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
-      echo "🔨 Building $IMAGE_FRONT..."
-      docker buildx build \
-        --platform linux/amd64,linux/arm64 \
-        --push \
-        --tag $IMAGE_FRONT \
-        .
   after_script:
-    # Nettoyer le builder
     - docker buildx rm mybuilder || true
-
-
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
