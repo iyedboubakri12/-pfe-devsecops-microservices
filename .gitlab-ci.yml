@@ -184,33 +184,25 @@ docker-build-local:
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
         echo "========== Building Docker image for $service =========="
-        docker build -t $service:latest $service
+        docker build -t $service:latest ./$service
       done
     - cd ../frontend
     - docker build -t frontend:latest .
-
-
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
 container-scan:
   stage: docker-scan
-  image: 
+  image:
     name: aquasec/trivy:latest
     entrypoint: [""]
   needs: ["docker-build-local"]
-  variables:
-    TRIVY_INSECURE: "true" # Autorise le scan sur un registre sans SSL
-    # Authentification pour que Trivy puisse tirer l'image
-    TRIVY_USERNAME: "gitlab-ci-token"
-    TRIVY_PASSWORD: "$CI_JOB_TOKEN"
   script:
     - mkdir -p reports
     - |
-      for service in api-gateway-service user-service exam-service answer-service frontend; do
-        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
-        echo "🛡️ Scanning $IMAGE_NAME..."
-        trivy image --format html --output reports/$service-trivy.html $IMAGE_NAME || true
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service frontend; do
+        echo "🛡️ Scanning $service:latest..."
+        trivy image --format html --output reports/$service-trivy.html $service:latest || true
       done
   artifacts:
     when: always
