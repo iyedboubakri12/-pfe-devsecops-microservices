@@ -185,9 +185,16 @@ docker-build-local:
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
         echo "========== Building Docker image for $service =========="
         docker build -t $service:latest ./$service
+        docker save $service:latest -o ../${service}.tar
       done
     - cd ../frontend
     - docker build -t frontend:latest .
+    - docker save frontend:latest -o ../frontend.tar
+  artifacts:
+    paths:
+      - backend/*.tar
+      - frontend.tar  
+    expire_in: 1 week
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
@@ -196,8 +203,7 @@ container_scan:
   image:
     name: aquasec/trivy:latest
     entrypoint: [""]
-  services:
-    - docker:24.0-dind # Nécessaire pour accéder aux images locales si elles ne sont pas sur un registre
+  
   variables:
     DOCKER_HOST: tcp://docker:2375
     TRIVY_NO_PROGRESS: "true"
@@ -210,28 +216,21 @@ container_scan:
   allow_failure: true
   script:
     - mkdir -p reports/
-
-    # Liste des images à scanner (doit correspondre aux noms du stage docker-build)
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service frontend; do
-        echo "🛡️ Scanning $service:latest..."
+        echo "🛡️ Scanning $service from saved file..."
         
-        # Génération du rapport HTML (Utilisation du template intégré dans l'image Trivy)
-        trivy image --format template --template "@/contrib/html.tpl" \
+        # Scan the .tar file instead of a running docker daemon
+        trivy image --input "${service}.tar" \
+          --format template --template "@/contrib/html.tpl" \
           --output "reports/${service}-trivy-report.html" \
-          --severity HIGH,CRITICAL \
-          "${service}:latest" || echo "Scan failed for $service"
-          
-        # Optionnel: Génération JSON pour exploitation automatique
-        trivy image --format json \
-          --output "reports/${service}-trivy-report.json" \
-          --severity HIGH,CRITICAL \
-          "${service}:latest" || true
+          --severity HIGH,CRITICAL || echo "Scan failed for $service"
       done
-
   artifacts:
     when: always
     paths:
       - reports/
     expire_in: 1 week
+  only:
+    - main
   
