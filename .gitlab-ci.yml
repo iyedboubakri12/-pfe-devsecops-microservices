@@ -201,11 +201,21 @@ container-scan:
     - mkdir -p reports
     - docker images
     - |
+      # Télécharger le template HTML officiel de Trivy si pas déjà présent
+      if [ ! -f html.tpl ]; then
+        curl -L -o html.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
+      fi
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service frontend; do
         echo "🛡️ Scanning $service:latest..."
-        trivy image --format html --output reports/$service-trivy.html $service:latest || echo "<html><body>No image found for $service</body></html>" > reports/$service-trivy.html
+        if docker inspect $service:latest >/dev/null 2>&1; then
+          trivy image --format template --template "@html.tpl" --output reports/$service-trivy.html $service:latest
+        else
+          echo "<html><body>No image found for $service</body></html>" > reports/$service-trivy.html
+        fi
+      done
   artifacts:
     when: always
     paths:
       - reports/
   allow_failure: true
+
