@@ -178,22 +178,24 @@ docker-build-local:
     DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://docker:2375
+    REGISTRY: 192.168.168.129:5050/root/devsecops-project
   script:
-    - docker info
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" 192.168.168.129:5050
     - cd backend
     - |
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
         echo "========== Building Docker image for $service =========="
-        docker build -t $service:latest ./$service
-        docker save $service:latest -o ../${service}.tar
+        docker build -t $REGISTRY/$service:latest ./$service
+        docker push $REGISTRY/$service:latest
       done
     - cd ../frontend
-    - docker build -t frontend:latest .
-    - docker save frontend:latest -o ../frontend.tar
+    - docker build -t $REGISTRY/frontend:latest .
+    - docker push $REGISTRY/frontend:latest
   artifacts:
     paths:
-    - "*.tar" 
+      - "*.tar"
     expire_in: 1 week
+
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
@@ -202,34 +204,48 @@ container_scan:
   image:
     name: aquasec/trivy:latest
     entrypoint: [""]
-  
+
+  needs:
+    - docker-build-local  # S'assurer que les images sont pushées
+
   variables:
-    DOCKER_HOST: tcp://docker:2375
     TRIVY_NO_PROGRESS: "true"
     TRIVY_CACHE_DIR: ".trivycache/"
+
   cache:
     key: trivy-cache
     paths:
       - .trivycache/
-  when: manual
-  allow_failure: true
+
   script:
     - mkdir -p reports/
     - |
+      REGISTRY="192.168.168.129:5050/root/devsecops-project"
+
       for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service frontend; do
-        echo "🛡️ Scanning $service from saved file..."
-        
-        # Scan the .tar file instead of a running docker daemon
-        trivy image --input "${service}.tar" \
+        IMAGE="$REGISTRY/$service:latest"
+        echo "🛡️ Scanning $IMAGE from registry..."
+
+        # Scan en HTML
+        trivy image $IMAGE \
           --format template --template "@/contrib/html.tpl" \
           --output "reports/${service}-trivy-report.html" \
-          --severity HIGH,CRITICAL || echo "Scan failed for $service"
+          --severity HIGH,CRITICAL || echo "HTML scan failed for $service"
+
+        # Scan en JSON
+        trivy image $IMAGE \
+          --format json \
+          --output "reports/${service}-trivy-report.json" \
+          --severity HIGH,CRITICAL || echo "JSON scan failed for $service"
       done
+
   artifacts:
     when: always
     paths:
       - reports/
     expire_in: 1 week
+
   only:
     - main
+
   
