@@ -194,17 +194,20 @@ docker-build-local:
     - docker buildx create --use --name mybuilder
     - docker buildx inspect --bootstrap
   script:
+    script:
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
+        # On construit le nom de l'image de manière compacte
         IMAGE_NAME="${REGISTRY_URL}/root/devsecops-project/${service}:latest"
-        echo "🔨 Building and pushing $IMAGE_NAME..."
-        # Utilisation de guillemets pour sécuriser les variables et point final pour le contexte
+        echo "🔨 Building $IMAGE_NAME..."
+        
+        # Exécution du build
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --push \
-          --tag "$IMAGE_NAME" \
-          "./$service"
+          --tag "${IMAGE_NAME}" \
+          "./${service}"
       done
   after_script:
     - docker buildx rm mybuilder || true
