@@ -186,6 +186,7 @@ docker-build-local:
     DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
   before_script:
+    - export REGISTRY_URL=$(echo -n $REGISTRY_URL)
     - until docker info >/dev/null 2>&1; do sleep 5; done
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
   script:
@@ -193,8 +194,8 @@ docker-build-local:
     - cd backend
     - |
       for service in $BACKEND_SERVICES; do
-        docker build -t "$REGISTRY_URL/root/devsecops-project/$service:latest" "./$service"
-        docker push "$REGISTRY_URL/root/devsecops-project/$service:latest"
+        docker build -t "$(echo -n $REGISTRY_URL)/root/devsecops-project/frontend:latest" .
+        docker push $REGISTRY_URL/root/devsecops-project/frontend:latest
       done
     # Build frontend
     - cd ../frontend
