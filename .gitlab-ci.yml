@@ -179,48 +179,28 @@ docker-build-local:
   services:
     - name: docker:24.0-dind
       alias: docker
-      command: ["--insecure-registry=192.168.168.129:5050", "--host=tcp://0.0.0.0:2375"]
+      command: ["--insecure-registry=192.168.168.129:5050"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
   before_script:
-    # Login au registry
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
-    # Installation de QEMU pour le support multi-architecture (indispensable pour arm64)
-    - docker run --privileged --rm tonistiigi/binfmt --install all
-    # Création du builder buildx
-    - docker buildx create --use --name mybuilder
-    - docker buildx inspect --bootstrap
   script:
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
-        IMAGE_NAME="${REGISTRY_URL}/root/devsecops-project/${service}:latest"
-        echo "🔨 Building and pushing $IMAGE_NAME..."
-        # Utilisation de guillemets pour sécuriser les variables et point final pour le contexte
-        docker buildx build \
-          --platform linux/amd64,linux/arm64 \
-          --push \
-          --tag "$IMAGE_NAME" \
-          "./$service"
+        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
+        echo "🔨 Building $IMAGE_NAME..."
+        docker build -t $IMAGE_NAME ./$service
+        docker push $IMAGE_NAME
       done
-  after_script:
-    - docker buildx rm mybuilder || true
-    # Build et push du frontend
+
     - cd ../frontend
-    - |
-      IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
-      echo "🔨 Building $IMAGE_FRONT..."
-      docker buildx build \
-        --platform linux/amd64,linux/arm64 \
-        --push \
-        --tag $IMAGE_FRONT \
-        .
-  after_script:
-    # Nettoyer le builder
-    - docker buildx rm mybuilder || true
+    - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
+    - docker build -t $IMAGE_FRONT .
+    - docker push $IMAGE_FRONT
 
 
 ############################
