@@ -186,29 +186,20 @@ docker-build-local:
     DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
   before_script:
+    - until docker info >/dev/null 2>&1; do sleep 5; done
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
   script:
-    # Backend
+    # Build backend
     - cd backend
     - |
-      for service in api-gateway-service user-service exam-service answer-service; do
-        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
-        IMAGE_SHA="$REGISTRY_URL/root/devsecops-project/$service:${CI_COMMIT_SHA}"
-        echo "🔨 Building $service..."
-        docker build -t $IMAGE_NAME ./$service
-        docker tag $IMAGE_NAME $IMAGE_SHA
-        docker push $IMAGE_NAME
-        docker push $IMAGE_SHA
+      for service in $BACKEND_SERVICES; do
+        docker build -t "$REGISTRY_URL/root/devsecops-project/$service:latest" "./$service"
+        docker push "$REGISTRY_URL/root/devsecops-project/$service:latest"
       done
-
-    # Frontend
+    # Build frontend
     - cd ../frontend
-    - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
-    - IMAGE_FRONT_SHA="$REGISTRY_URL/root/devsecops-project/frontend:${CI_COMMIT_SHA}"
-    - docker build -t $IMAGE_FRONT .
-    - docker tag $IMAGE_FRONT $IMAGE_FRONT_SHA
-    - docker push $IMAGE_FRONT
-    - docker push $IMAGE_FRONT_SHA
+    - docker build -t "$REGISTRY_URL/root/devsecops-project/frontend:latest" .
+    - docker push "$REGISTRY_URL/root/devsecops-project/frontend:latest"
 
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
