@@ -192,8 +192,7 @@ docker-build-local:
     - docker save frontend:latest -o ../frontend.tar
   artifacts:
     paths:
-      - backend/*.tar
-      - frontend.tar  
+       "*.tar" 
     expire_in: 1 week
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
