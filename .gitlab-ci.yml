@@ -193,9 +193,11 @@ docker-build-local:
     # Build backend
     - cd backend
     - |
-      for service in $BACKEND_SERVICES; do
-        docker build -t "$(echo -n $REGISTRY_URL)/root/devsecops-project/backend/$service:latest" .
-        docker push $REGISTRY_URL/root/devsecops-project/backend/$service:latest
+      for service in api-gateway-service user-service exam-service answer-service; do
+      IMAGE="$REGISTRY_URL/root/devsecops-project/$service:latest"
+      echo "Building $IMAGE"
+      docker build -t $IMAGE ./$service
+      docker push $IMAGE
       done
     # Build frontend
     - cd ../frontend
