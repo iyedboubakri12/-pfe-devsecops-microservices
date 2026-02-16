@@ -177,31 +177,31 @@ docker-build-local:
   stage: docker-build
   image: docker:24.0
   services:
-    - docker:24.0-dind
-      alias:docker
+    - name: docker:24.0-dind
+      alias: docker
+      command: ["--insecure-registry=192.168.168.129:5050"]
   variables:
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://docker:2375
-    DOCKER_BUILDKIT: "0"  
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+    REGISTRY_URL: "192.168.168.129:5050"
   before_script:
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
   script:
-    - docker info
     - cd backend
     - |
-      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
-        echo "========== Building Docker image for $service =========="
-        docker build -t $REGISTRY/$service:latest ./$service
-        docker push $REGISTRY/$service:latest
+      for service in api-gateway-service user-service exam-service answer-service; do
+        IMAGE_NAME="$REGISTRY_URL/root/devsecops-project/$service:latest"
+        echo "🔨 Building $IMAGE_NAME..."
+        docker build -t $IMAGE_NAME ./$service
+        docker push $IMAGE_NAME
       done
+
     - cd ../frontend
-    - docker build -t $REGISTRY/frontend:latest .
-    - docker push $REGISTRY/frontend:latest
-  artifacts:
-    paths:
-      - "*.tar"
-    expire_in: 1 week
+    - IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
+    - docker build -t $IMAGE_FRONT .
+    - docker push $IMAGE_FRONT
+
 
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
