@@ -174,17 +174,6 @@ sca-scan-frontend:
 # 8️⃣ BUILD & PUSH TO REGISTRY (CORRIGÉ)
 ############################
 docker-build-local:
-  stages:
-  - docker-build
-
-variables:
-  DOCKER_HOST: tcp://docker:2375
-  DOCKER_TLS_CERTDIR: ""
-  DOCKER_DRIVER: overlay2
-  REGISTRY_URL: "192.168.168.129:5050"
-  BACKEND_SERVICES: "api-gateway-service user-service exam-service answer-service"
-
-docker-build-local:
   stage: docker-build
   image: docker:24.0
   services:
@@ -196,6 +185,13 @@ docker-build-local:
     paths:
       - backend/.m2/
       - frontend/node_modules/
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+    REGISTRY_URL: "192.168.168.129:5050"
+    BACKEND_SERVICES: "api-gateway-service user-service exam-service answer-service"
+    
   before_script:
     # Login au registry GitLab
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
