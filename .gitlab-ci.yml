@@ -189,7 +189,7 @@ docker-build-local:
   services:
     - name: docker:24.0-dind
       alias: docker
-      privileged: true
+  privileged: true   # ✅ Mettre ici, pas dans services
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
@@ -245,6 +245,7 @@ docker-build-local:
   after_script:
     # Nettoyage du builder
     - docker buildx rm mybuilder || true
+
 
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
