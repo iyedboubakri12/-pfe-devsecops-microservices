@@ -191,7 +191,7 @@ docker-build-local:
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
-container_scan_backend:
+container_scan:
   stage: docker-scan
   image:
     name: aquasec/trivy:latest
