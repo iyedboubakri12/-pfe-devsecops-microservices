@@ -189,12 +189,12 @@ docker-build-local:
   services:
     - name: docker:24.0-dind
       alias: docker
-  privileged: true   # ✅ Mettre ici, pas dans services
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
       - backend/.m2/
       - frontend/node_modules/
+
   before_script:
     # Attente dynamique pour Docker-in-Docker
     - |
@@ -245,6 +245,7 @@ docker-build-local:
   after_script:
     # Nettoyage du builder
     - docker buildx rm mybuilder || true
+
 
 
 ############################
