@@ -194,8 +194,8 @@ docker-build-local:
     - cd backend
     - |
       for service in $BACKEND_SERVICES; do
-        docker build -t "$(echo -n $REGISTRY_URL)/root/devsecops-project/frontend:latest" .
-        docker push $REGISTRY_URL/root/devsecops-project/frontend:latest
+        docker build -t "$(echo -n $REGISTRY_URL)/root/devsecops-project/backend/$service:latest" .
+        docker push $REGISTRY_URL/root/devsecops-project/backend/$service:latest
       done
     # Build frontend
     - cd ../frontend
