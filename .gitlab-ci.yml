@@ -198,7 +198,7 @@ docker-build-local:
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
         # On construit le nom de l'image de manière compacte
-        IMAGE_NAME="${REGISTRY_URL}/root/devsecops-project/${service}:latest"
+        IMAGE_NAME="$(echo -n "${REGISTRY_URL}/root/devsecops-project/${service}:latest")"
         echo "🔨 Building $IMAGE_NAME..."
         
         # Exécution du build
