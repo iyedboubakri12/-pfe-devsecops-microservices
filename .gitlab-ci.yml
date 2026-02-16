@@ -186,15 +186,16 @@ docker-build-local:
     DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
   before_script:
-    # Login dans le registry
+    # Login au registry GitLab
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
-    # Laisser DIND démarrer
-    - sleep 10
-    # Créer le builder Buildx
+    # Attendre que DIND soit prêt
+    - echo "⏳ Waiting for Docker-in-Docker to start..."
+    - sleep 20
+    # Créer un builder Buildx
     - docker buildx create --use --name mybuilder
     - docker buildx inspect --bootstrap
   script:
-    # Build des services backend
+    # Build et push de chaque service backend
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
@@ -207,7 +208,7 @@ docker-build-local:
           ./$service
       done
 
-    # Build frontend
+    # Build et push du frontend
     - cd ../frontend
     - |
       IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
@@ -218,7 +219,8 @@ docker-build-local:
         --tag $IMAGE_FRONT \
         .
   after_script:
-    - docker buildx rm mybuilder
+    # Nettoyer le builder
+    - docker buildx rm mybuilder || true
 
 
 ############################
