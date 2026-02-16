@@ -179,17 +179,22 @@ docker-build-local:
   services:
     - name: docker:24.0-dind
       alias: docker
-      command: ["--insecure-registry=192.168.168.129:5050"]
+      command: ["--insecure-registry=192.168.168.129:5050", "--host=tcp://0.0.0.0:2375"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
     REGISTRY_URL: "192.168.168.129:5050"
   before_script:
+    # Login dans le registry
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
+    # Laisser DIND démarrer
+    - sleep 10
+    # Créer le builder Buildx
     - docker buildx create --use --name mybuilder
     - docker buildx inspect --bootstrap
   script:
+    # Build des services backend
     - cd backend
     - |
       for service in api-gateway-service user-service exam-service answer-service; do
@@ -201,6 +206,8 @@ docker-build-local:
           --tag $IMAGE_NAME \
           ./$service
       done
+
+    # Build frontend
     - cd ../frontend
     - |
       IMAGE_FRONT="$REGISTRY_URL/root/devsecops-project/frontend:latest"
@@ -210,6 +217,8 @@ docker-build-local:
         --push \
         --tag $IMAGE_FRONT \
         .
+  after_script:
+    - docker buildx rm mybuilder
 
 
 ############################
