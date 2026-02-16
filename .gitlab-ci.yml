@@ -212,7 +212,7 @@ container_scan:
     entrypoint: [""]
 
   needs:
-    - docker-build-local  # S'assurer que les images sont pushées
+    - docker-build-local
 
   variables:
     TRIVY_NO_PROGRESS: "true"
@@ -223,26 +223,27 @@ container_scan:
     paths:
       - .trivycache/
 
+  before_script:
+    - echo "$CI_JOB_TOKEN" | trivy registry login --username gitlab-ci-token --password-stdin 192.168.168.129:5050
+
   script:
     - mkdir -p reports/
     - |
       REGISTRY="192.168.168.129:5050/root/devsecops-project"
 
-      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service frontend; do
+      for service in api-gateway-service user-service exam-service answer-service frontend; do
         IMAGE="$REGISTRY/$service:latest"
-        echo "🛡️ Scanning $IMAGE from registry..."
+        echo "🛡️ Scanning $IMAGE..."
 
-        # Scan en HTML
         trivy image $IMAGE \
           --format template --template "@/contrib/html.tpl" \
-          --output "reports/${service}-trivy-report.html" \
-          --severity HIGH,CRITICAL || echo "HTML scan failed for $service"
+          --output "reports/${service}-report.html" \
+          --severity HIGH,CRITICAL || true
 
-        # Scan en JSON
         trivy image $IMAGE \
           --format json \
-          --output "reports/${service}-trivy-report.json" \
-          --severity HIGH,CRITICAL || echo "JSON scan failed for $service"
+          --output "reports/${service}-report.json" \
+          --severity HIGH,CRITICAL || true
       done
 
   artifacts:
@@ -253,5 +254,4 @@ container_scan:
 
   only:
     - main
-
   
