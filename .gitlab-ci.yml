@@ -273,8 +273,9 @@ secret-detection:
     paths:
       - leaks-report.json
       - leaks-report.html
-    expire_in: 1 week
+    expire_in: 2 week
   allow_failure: true # On ne veut pas bloquer la pipeline à cause de secrets détectés, mais on veut en être informé
   when: manual
+
   
   
