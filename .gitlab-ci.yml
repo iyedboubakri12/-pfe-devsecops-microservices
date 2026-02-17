@@ -267,14 +267,12 @@ secret-detection:
   script:
     - echo "🔍 Analyse du dépôt à la recherche de secrets..."
     # On scanne tout l'historique du projet
-    - gitleaks detect --source . --verbose --redact --report-path leaks-report.json --report-format html
+    - gitleaks detect --source . --redact --report-format sarif --report-path gl-secret-report.sarif
   artifacts:
-    when: always
-    paths:
-      - leaks-report.json
-      - leaks-report.html
-    expire_in: 2 week
-  allow_failure: true # On ne veut pas bloquer la pipeline à cause de secrets détectés, mais on veut en être informé
+    expire_in: 1 week
+    reports:
+      sast: gl-secret-report.sarif
+  allow_failure: true
   when: manual
 
   
