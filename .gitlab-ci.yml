@@ -4,7 +4,7 @@
 variables:
   GIT_DEPTH: "1"
   SONAR_HOST_URL: "http://192.168.168.129:9000"
-  REGISTRY_URL: "192.168.168.129:5050"
+  REGISTRY_URL: "registry.gitlab.com"
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
   DOCKER_DRIVER: overlay2
   
@@ -181,33 +181,30 @@ sca-scan-frontend:
 ############################
 # 8️⃣ BUILD & PUSH TO REGISTRY (CORRIGÉ)
 ############################
-docker-build-local:
+docker-build:
   stage: docker-build
   tags:
     - vm
-  image: docker:24.0
-  services:
-    - docker:24.0-dind
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
-    REGISTRY_URL: registry.gitlab.com
+
   before_script:
-    - until docker info; do sleep 5; done
+    - docker info
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
+
   script:
     - cd backend
     - |
       for service in eureka-service course-service api-gateway-service user-service exam-service answer-service; do
-        IMAGE="$REGISTRY_URL/devsecopsi-group/devsecops-project/$service:latest"
-        echo "Building $IMAGE"
+        IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/$service:latest"
+        echo "🚀 Building $IMAGE"
         docker build -t $IMAGE ./$service
         docker push $IMAGE
       done
+
     - cd ../frontend
-    - docker build -t "$REGISTRY_URL/devsecopsi-group/devsecops-project/frontend:latest" .
-    - docker push "$REGISTRY_URL/devsecopsi-group/devsecops-project/frontend:latest"
+    - IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest"
+    - echo "🚀 Building $IMAGE"
+    - docker build -t $IMAGE .
+    - docker push $IMAGE
   when: manual
 
 ############################
