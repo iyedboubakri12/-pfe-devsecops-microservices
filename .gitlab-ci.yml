@@ -187,32 +187,27 @@ docker-build-local:
     - vm
   image: docker:24.0
   services:
-    - name: docker:24.0-dind
-      alias: docker
-      command: ["--insecure-registry=192.168.168.129:5050"]
+    - docker:24.0-dind
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
-    REGISTRY_URL: "192.168.168.129:5050"
+    REGISTRY_URL: registry.gitlab.com
   before_script:
-    - export REGISTRY_URL=$(echo -n $REGISTRY_URL)
-    - until docker info >/dev/null 2>&1; do sleep 5; done
-    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin $REGISTRY_URL
+    - until docker info; do sleep 5; done
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
   script:
-    # Build backend
     - cd backend
     - |
       for service in eureka-service course-service api-gateway-service user-service exam-service answer-service; do
-      IMAGE="$REGISTRY_URL/root/devsecops-project/$service:latest"
-      echo "Building $IMAGE"
-      docker build -t $IMAGE ./$service
-      docker push $IMAGE
+        IMAGE="$REGISTRY_URL/devsecopsi-group/devsecops-project/$service:latest"
+        echo "Building $IMAGE"
+        docker build -t $IMAGE ./$service
+        docker push $IMAGE
       done
-    # Build frontend
     - cd ../frontend
-    - docker build -t "$REGISTRY_URL/root/devsecops-project/frontend:latest" .
-    - docker push "$REGISTRY_URL/root/devsecops-project/frontend:latest"
+    - docker build -t "$REGISTRY_URL/devsecopsi-group/devsecops-project/frontend:latest" .
+    - docker push "$REGISTRY_URL/devsecopsi-group/devsecops-project/frontend:latest"
   when: manual
 
 ############################
@@ -225,7 +220,6 @@ container_scan:
   image:
     name: aquasec/trivy:latest
     entrypoint: [""]
-
   needs:
     - docker-build-local
 
@@ -239,14 +233,14 @@ container_scan:
       - .trivycache/
 
   before_script:
-    - echo "$CI_JOB_TOKEN" | trivy registry login --username gitlab-ci-token --password-stdin 192.168.168.129:5050
+    - echo "$CI_JOB_TOKEN" | trivy registry login --username gitlab-ci-token --password-stdin registry.gitlab.com
 
   script:
     - mkdir -p reports/
     - |
-      REGISTRY="192.168.168.129:5050/root/devsecops-project"
+      REGISTRY="registry.gitlab.com/devsecopsi-group/devsecops-project"
 
-      for service in api-gateway-service user-service exam-service answer-service frontend; do
+      for service in eureka-service course-service api-gateway-service user-service exam-service answer-service frontend; do
         IMAGE="$REGISTRY/$service:latest"
         echo "🛡️ Scanning $IMAGE..."
 
@@ -269,6 +263,7 @@ container_scan:
 
   only:
     - main
+  when: manual  
 secret-detection:
   stage: security-scan
   tags:
