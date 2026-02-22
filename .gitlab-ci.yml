@@ -181,7 +181,7 @@ sca-scan-frontend:
 ############################
 # 8️⃣ BUILD & PUSH TO REGISTRY (CORRIGÉ)
 ############################
-docker-build:
+docker-build-local:
   stage: docker-build
   tags:
     - vm
