@@ -187,32 +187,43 @@ docker-build-local:
   stage: docker-build
   tags:
     - vm
-  image: docker:24.0            # Version stable Docker
+  image: docker:24.0                    # Docker stable pour executor
   services:
-    - name: docker:24.0-dind     # Docker-in-Docker stable
+    - name: docker:24.0-dind             # Docker-in-Docker stable
+      alias: docker
   variables:
-    DOCKER_TLS_CERTDIR: ""        # Désactive TLS DinD
+    DOCKER_TLS_CERTDIR: ""               # Désactive TLS pour DinD
     DOCKER_DRIVER: overlay2
   before_script:
+    - echo "⏳ Waiting for Docker to be ready..."
     - until docker info >/dev/null 2>&1; do sleep 5; done
+    - echo "🔹 Docker is ready"
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
   script:
-    # Build backend
+    # Build backend service par service
     - cd backend
     - |
       for service in eureka-service course-service api-gateway-service user-service exam-service answer-service; do
         IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/$service:latest"
-        echo "🚀 Building $IMAGE"
-        docker build -t $IMAGE ./$service
-        docker push $IMAGE
+        echo "🚀 Building $service -> $IMAGE"
+        docker build --pull -t $IMAGE ./$service
+        echo "🔹 Pushing $service..."
+        until docker push $IMAGE; do
+          echo "⚠️ Push failed, retrying in 5s..."
+          sleep 5
+        done
       done
 
     # Build frontend
     - cd ../frontend
     - IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest"
-    - echo "🚀 Building $IMAGE"
-    - docker build -t $IMAGE .
-    - docker push $IMAGE
+    - echo "🚀 Building frontend -> $IMAGE"
+    - docker build --pull -t $IMAGE .
+    - echo "🔹 Pushing frontend..."
+    - until docker push $IMAGE; do
+        echo "⚠️ Push failed, retrying in 5s..."
+        sleep 5
+      done
   when: manual
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
