@@ -187,15 +187,17 @@ docker-build-local:
   stage: docker-build
   tags:
     - vm
-  image: docker:latest            # Docker disponible
+  image: docker:24.0            # Version stable Docker
   services:
-    - docker:dind                 # Docker-in-Docker
+    - name: docker:24.0-dind     # Docker-in-Docker stable
   variables:
-    DOCKER_TLS_CERTDIR: ""        # Désactive TLS pour DinD
+    DOCKER_TLS_CERTDIR: ""        # Désactive TLS DinD
+    DOCKER_DRIVER: overlay2
   before_script:
-    - docker info
+    - until docker info >/dev/null 2>&1; do echo "⏳ Waiting for Docker..."; sleep 5; done
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
   script:
+    # Build backend
     - cd backend
     - |
       for service in eureka-service course-service api-gateway-service user-service exam-service answer-service; do
@@ -205,6 +207,7 @@ docker-build-local:
         docker push $IMAGE
       done
 
+    # Build frontend
     - cd ../frontend
     - IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest"
     - echo "🚀 Building $IMAGE"
