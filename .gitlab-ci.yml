@@ -187,11 +187,14 @@ docker-build-local:
   stage: docker-build
   tags:
     - vm
-
+  image: docker:latest            # Docker disponible
+  services:
+    - docker:dind                 # Docker-in-Docker
+  variables:
+    DOCKER_TLS_CERTDIR: ""        # Désactive TLS pour DinD
   before_script:
     - docker info
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
-
   script:
     - cd backend
     - |
@@ -208,7 +211,6 @@ docker-build-local:
     - docker build -t $IMAGE .
     - docker push $IMAGE
   when: manual
-
 ############################
 # 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
 ############################
