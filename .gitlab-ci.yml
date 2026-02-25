@@ -181,52 +181,58 @@ sca-scan-frontend:
   allow_failure: true
   when: manual
 ############################
-# 8️⃣ BUILD & PUSH TO REGISTRY (CORRIGÉ)
+# 8️⃣ BUILD backend & PUSH TO REGISTRY (CORRIGÉ)
 ############################
-docker-build-local:
+docker-build-backend:
   stage: docker-build
   tags:
     - vm
-  image: docker:24.0                    # Docker stable pour executor
+  image: docker:24.0
   services:
-    - name: docker:24.0-dind             # Docker-in-Docker stable
+    - name: docker:24.0-dind
       alias: docker
   variables:
-    DOCKER_TLS_CERTDIR: ""               # Désactive TLS pour DinD
+    DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
   before_script:
-    - echo "⏳ Waiting for Docker to be ready..."
     - until docker info >/dev/null 2>&1; do sleep 5; done
-    - echo "🔹 Docker is ready"
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
   script:
-    # Build backend service par service
     - cd backend
     - |
       for service in eureka-service course-service api-gateway-service user-service exam-service answer-service; do
         IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/$service:latest"
-        echo "🚀 Building $service -> $IMAGE"
+        echo "🚀 Building $service"
         docker build --pull -t $IMAGE ./$service
-        echo "🔹 Pushing $service..."
-        until docker push $IMAGE; do
-          echo "⚠️ Push failed, retrying in 5s..."
-          sleep 5
-        done
-      done
-
-    # Build frontend
-    - cd ../frontend
-    - IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest"
-    - echo "🚀 Building frontend -> $IMAGE"
-    - docker build --pull -t $IMAGE .
-    - echo "🔹 Pushing frontend..."
-    - until docker push $IMAGE; do
-        echo "⚠️ Push failed, retrying in 5s..."
-        sleep 5
+        docker push $IMAGE
       done
   when: manual
+  ############################
+# 8️⃣ BUILD frontend & PUSH TO REGISTRY (CORRIGÉ)
+############################     
+docker-build-frontend:
+  stage: docker-build
+  tags:
+    - vm
+  image: docker:24.0
+  services:
+    - name: docker:24.0-dind
+      alias: docker
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+  before_script:
+    - until docker info >/dev/null 2>&1; do sleep 5; done
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
+  script:
+    - cd frontend
+    - IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest"
+    - echo "🚀 Building frontend"
+    - docker build --pull -t $IMAGE .
+    - docker push $IMAGE
+  when: manual
 ############################
-# 9️⃣ SCAN DES IMAGES AVEC TRIVY (CORRIGÉ)
+# 9️⃣ SCAN DES IMAGES AVEC TRIVY
 ############################
 container_scan:
   stage: docker-scan
@@ -236,19 +242,18 @@ container_scan:
     name: aquasec/trivy:latest
     entrypoint: [""]
   needs:
-    - docker-build-local
+    - docker-build-backend
+    - docker-build-frontend
 
   variables:
     TRIVY_NO_PROGRESS: "true"
     TRIVY_CACHE_DIR: ".trivycache/"
+    TRIVY_TIMEOUT: "10m"
 
   cache:
     key: trivy-cache
     paths:
       - .trivycache/
-
-  before_script:
-    - echo "$CI_JOB_TOKEN" | trivy registry login --username gitlab-ci-token --password-stdin registry.gitlab.com
 
   script:
     - mkdir -p reports/
@@ -259,15 +264,22 @@ container_scan:
         IMAGE="$REGISTRY/$service:latest"
         echo "🛡️ Scanning $IMAGE..."
 
-        trivy image $IMAGE \
-          --format template --template "@/contrib/html.tpl" \
+        trivy image \
+          --username gitlab-ci-token \
+          --password $CI_JOB_TOKEN \
+          --severity HIGH,CRITICAL \
+          --format template \
+          --template "@/contrib/html.tpl" \
           --output "reports/${service}-report.html" \
-          --severity HIGH,CRITICAL || true
+          $IMAGE || true
 
-        trivy image $IMAGE \
+        trivy image \
+          --username gitlab-ci-token \
+          --password $CI_JOB_TOKEN \
+          --severity HIGH,CRITICAL \
           --format json \
           --output "reports/${service}-report.json" \
-          --severity HIGH,CRITICAL || true
+          $IMAGE || true
       done
 
   artifacts:
@@ -278,7 +290,8 @@ container_scan:
 
   only:
     - main
-  when: manual  
+
+  when: manual
 secret-detection:
   stage: security-scan
   tags:
