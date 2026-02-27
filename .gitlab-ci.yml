@@ -314,27 +314,25 @@ secret-detection:
 
 owasp-zap-dast:
   stage: dast-scan
-  image: docker.io/zaproxy/zap-stable
+  image: zaproxy/zap-stable:latest # Image officielle mise à jour
+  # tags: 
+  #   - devsecops  # <--- Ajoute le tag de ton runner si tu en as mis un
   script:
-    # 1. Création du dossier pour les rapports (obligatoire pour ZAP)
-    - mkdir -p /zap/wrk/zap-reports
-    
-    # 2. Scan de l'API Gateway (Backend)
-    - echo "🌐 Scan Dynamique du Backend..."
+    - mkdir -p /zap/wrk
+    - echo "🌐 Scan Dynamique du Backend (API Gateway)..."
+    # Utilisation de l'IP ou du nom de service si sur le même réseau Docker
     - zap-baseline.py -t http://192.168.168.129:8090 -r zap_api_report.html -J zap_api_report.json || true
     
-    # 3. Scan du Frontend (Angular)
     - echo "🌐 Scan Dynamique du Frontend..."
     - zap-baseline.py -t http://192.168.168.129:4200 -r zap_frontend_report.html -J zap_frontend_report.json || true
     
-    # 4. Déplacement des rapports vers le dossier de travail de GitLab
-    - cp /zap/wrk/zap_api_report.* .
-    - cp /zap/wrk/zap_frontend_report.* .
+    # Correction : ZAP enregistre par défaut dans /zap/wrk
+    - cp /zap/wrk/zap_api_report.html . || echo "Report not found"
+    - cp /zap/wrk/zap_frontend_report.html . || echo "Report not found"
     
   artifacts:
     when: always
     paths:
       - "*.html"
       - "*.json"
-    expire_in: 1 week
   allow_failure: true
