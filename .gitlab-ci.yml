@@ -29,6 +29,8 @@ stages:
   - security-scan
   - docker-build
   - docker-scan
+  - dast-scan
+
 
 ############################
 # 1️⃣ INSTALLATION DES MODULES COMMUNS
@@ -308,6 +310,22 @@ secret-detection:
     reports:
       sast: gl-secret-report.sarif
   allow_failure: true
+  when: manual
+
+zap_scan:
+  stage: dast-scan
+  image: owasp/zap2docker-stable
+  script:
+    - echo "Scan API Gateway"
+    - zap-baseline.py -t http://host.docker.internal:8090 -r zap_api_report.html || true
+
+    - echo "Scan Frontend"
+    - zap-baseline.py -t http://host.docker.internal:4200 -r zap_frontend_report.html || true
+
+  artifacts:
+    paths:
+      - zap_api_report.html
+      - zap_frontend_report.html
   when: manual
 
   
