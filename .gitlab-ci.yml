@@ -314,7 +314,7 @@ secret-detection:
 
 owasp-zap-dast:
   stage: dast-scan
-  image: owasp/zap2docker-stable:latest
+  image: docker.io/zaproxy/zap-stable
   script:
     # 1. Création du dossier pour les rapports (obligatoire pour ZAP)
     - mkdir -p /zap/wrk/zap-reports
