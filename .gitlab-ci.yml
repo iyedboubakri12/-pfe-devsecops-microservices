@@ -315,7 +315,6 @@ secret-detection:
 owasp-zap-dast:
   stage: dast-scan
   image: owasp/zap2docker-stable:latest
-  needs: ["docker-pipeline"] # On attend que les images soient prêtes
   script:
     # 1. Création du dossier pour les rapports (obligatoire pour ZAP)
     - mkdir -p /zap/wrk/zap-reports
