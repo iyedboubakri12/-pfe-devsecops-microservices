@@ -314,20 +314,18 @@ secret-detection:
 
 zap_scan:
   stage: dast-scan
-  tags:
-    - vm
   image: docker.io/zaproxy/zap-stable
   script:
+    - mkdir -p zap-reports
     - echo "Scan API Gateway"
-    - zap-baseline.py -t http://host.docker.internal:8090 -r zap_api_report.html || true
+    - zap-baseline.py -t http://host.docker.internal:8090 -r zap-reports/zap_api_report.html || true
 
     - echo "Scan Frontend"
-    - zap-baseline.py -t http://host.docker.internal:4200 -r zap_frontend_report.html || true
+    - zap-baseline.py -t http://host.docker.internal:4200 -r zap-reports/zap_frontend_report.html || true
 
   artifacts:
     paths:
-      - zap_api_report.html
-      - zap_frontend_report.html
+      - zap-reports/
   when: manual
 
   
