@@ -315,8 +315,8 @@ secret-detection:
 owasp-zap-dast:
   stage: dast-scan
   image: zaproxy/zap-stable:latest # Image officielle mise à jour
-  # tags: 
-  #   - devsecops  # <--- Ajoute le tag de ton runner si tu en as mis un
+  tags:
+    - vm
   script:
     - mkdir -p /zap/wrk
     - echo "🌐 Scan Dynamique du Backend (API Gateway)..."
