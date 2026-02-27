@@ -315,14 +315,17 @@ secret-detection:
 zap_scan:
   stage: dast-scan
   image: docker.io/zaproxy/zap-stable
+  services:
+    - name: registry.gitlab.com/devsecopsi-group/devsecops-project/api-gateway-service:latest
+      alias: api-gateway
+    - name: registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest
+      alias: frontend
   script:
     - mkdir -p zap-reports
     - echo "Scan API Gateway"
-    - zap-baseline.py -t http://host.docker.internal:8090 -r zap-reports/zap_api_report.html || true
-
+    - zap-baseline.py -t http://api-gateway:8090 -r zap-reports/zap_api_report.html -J zap-reports/zap_api_report.json
     - echo "Scan Frontend"
-    - zap-baseline.py -t http://host.docker.internal:4200 -r zap-reports/zap_frontend_report.html || true
-
+    - zap-baseline.py -t http://frontend:4200 -r zap-reports/zap_frontend_report.html -J zap-reports/zap_frontend_report.json
   artifacts:
     paths:
       - zap-reports/
