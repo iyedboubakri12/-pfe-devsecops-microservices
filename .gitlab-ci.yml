@@ -316,7 +316,7 @@ zap_scan:
   stage: dast-scan
   tags:
     - vm
-  image: owasp/zap2docker-stable
+  image: docker.io/zaproxy/zap-stable
   script:
     - echo "Scan API Gateway"
     - zap-baseline.py -t http://host.docker.internal:8090 -r zap_api_report.html || true
