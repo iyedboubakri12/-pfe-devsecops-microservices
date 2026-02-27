@@ -313,22 +313,27 @@ secret-detection:
   when: manual
 
 owasp-zap-dast:
-  stage: dast-scan
-  image: zaproxy/zap-stable:latest # Image officielle mise à jour
+  stage: security-scan
+  image: zaproxy/zap-stable:latest
   tags:
     - vm
   script:
     - mkdir -p /zap/wrk
-    - echo "🌐 Scan Dynamique du Backend (API Gateway)..."
-    # Utilisation de l'IP ou du nom de service si sur le même réseau Docker
-    - zap-baseline.py -t http://192.168.168.129:8090 -r zap_api_report.html -J zap_api_report.json || true
+    - echo "🌐 Démarrage du scan dynamique sur l'architecture Microservices..."
     
-    - echo "🌐 Scan Dynamique du Frontend..."
-    - zap-baseline.py -t http://192.168.168.129:4200 -r zap_frontend_report.html -J zap_frontend_report.json || true
+    # SCAN DU BACKEND (API GATEWAY) sur le port 8090
+    - echo "🔍 Scan API Gateway..."
+    - zap-baseline.py -t http://172.17.0.1:8090 -r zap_api_report.html -J zap_api_report.json || true
     
-    # Correction : ZAP enregistre par défaut dans /zap/wrk
-    - cp /zap/wrk/zap_api_report.html . || echo "Report not found"
-    - cp /zap/wrk/zap_frontend_report.html . || echo "Report not found"
+    # SCAN DU FRONTEND (ANGULAR) sur le port 4200
+    - echo "🔍 Scan Frontend..."
+    - zap-baseline.py -t http://172.17.0.1:4200 -r zap_frontend_report.html -J zap_frontend_report.json || true
+    
+    # On récupère les rapports générés par ZAP
+    - cp /zap/wrk/zap_api_report.html .
+    - cp /zap/wrk/zap_frontend_report.html .
+    - cp /zap/wrk/zap_api_report.json .
+    - cp /zap/wrk/zap_frontend_report.json .
     
   artifacts:
     when: always
