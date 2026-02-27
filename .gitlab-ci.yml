@@ -314,6 +314,8 @@ secret-detection:
 
 zap_scan:
   stage: dast-scan
+  tags:
+    - vm
   image: owasp/zap2docker-stable
   script:
     - echo "Scan API Gateway"
