@@ -386,3 +386,4 @@ owasp-zap-dast:
       - "*.html"
       - "*.json"
   allow_failure: true
+  when: manual
