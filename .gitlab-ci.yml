@@ -38,6 +38,8 @@ stages:
 ############################
 install-commons:
   stage: build-shared
+  tags:
+    - vm
   image: maven:3.8.5-openjdk-17
   script:
     - cd backend/common-service && mvn install -DskipTests $MAVEN_CLI_OPTS
@@ -50,6 +52,8 @@ install-commons:
 ############################
 build-all-backend:
   stage: build-all
+  tags:
+    - vm
   image: maven:3.8.5-openjdk-17
   needs: ["install-commons"]
   script:
@@ -70,6 +74,8 @@ build-all-backend:
 ############################
 build-frontend-app:
   stage: build-all
+  tags:
+    - vm
   image: node:18-alpine
   script:
     - cd frontend
