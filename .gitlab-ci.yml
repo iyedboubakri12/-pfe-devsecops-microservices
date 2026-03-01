@@ -3,7 +3,7 @@
 ############################
 variables:
   GIT_DEPTH: "1"
-  SONAR_HOST_URL: "http://192.168.168.129:9000"
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
   REGISTRY_URL: "registry.gitlab.com"
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
   DOCKER_DRIVER: overlay2
@@ -129,31 +129,29 @@ frontend-tests:
   when: manual
 
 ############################
-# 4️⃣ SONARQUBE BACKEND
+# 4️⃣ sonarcloud-backend
 ############################
-sonarqube-backend:
+sonarcloud-backend:
   stage: security-scan
   tags:
     - vm
   image: maven:3.8.5-openjdk-17
-  needs:
-  - job: backend-tests
-    artifacts: true
-  script: |
-    cd backend
-    for service in user-service exam-service answer-service course-service api-gateway-service eureka-service; do
-      echo "========== Sonar Backend : $service =========="
-      cd $service
-      mvn verify sonar:sonar $MAVEN_CLI_OPTS \
-        -Dsonar.projectKey=$service \
-        -Dsonar.host.url=$SONAR_HOST_URL \
-        -Dsonar.login=$SONAR_TOKEN \
-        -Dsonar.java.binaries=target/classes \
-        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-        || echo "Sonar failed for $service"
-      cd ..
-    done
+  needs: ["backend-tests"]
+  script:
+    - cd backend
+    - |
+      for service in user-service exam-service answer-service course-service api-gateway-service; do
+        echo "🚀 Analyse Cloud de $service..."
+        (cd $service && mvn verify sonar:sonar \
+          $MAVEN_CLI_OPTS \
+          -Dsonar.projectKey=iyed-pfe-sportapp-backend \
+          -Dsonar.organization=$SONAR_ORGANIZATION \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml) || true
+      done
   allow_failure: true
+  when: manual
 ############################
 # 4️⃣ sca-scan-backend
 ############################
@@ -184,27 +182,30 @@ sca-scan-backend:
 ############################
 # 5️⃣ SONARQUBE FRONTEND
 ############################
-sonar-frontend:
+sonarcloud-frontend:
   stage: security-scan
   tags:
     - vm
-  image: 
+  image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
   needs: ["frontend-tests"]
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
   script:
     - cd frontend
-    - |
-      sonar-scanner \
-        -Dsonar.projectKey=devsecops-frontend \
-        -Dsonar.projectName=devsecops-frontend \
-        -Dsonar.projectVersion=$CI_COMMIT_SHORT_SHA \
-        -Dsonar.sources=src \
+    - sonar-scanner \
+        -Dsonar.projectKey=iyed-pfe-frontend \
+        -Dsonar.organization=$SONAR_ORGANIZATION \
         -Dsonar.host.url=$SONAR_HOST_URL \
         -Dsonar.login=$SONAR_TOKEN \
+        -Dsonar.sources=src \
         -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
         -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts
   allow_failure: true
+  when: manual
 ############################
 # 5️⃣ sca-scan-frontend
 ############################
