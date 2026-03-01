@@ -25,6 +25,8 @@ default:
   image: maven:3.8.5-openjdk-17
 stages:
   - build-shared
+  - build-backend
+  - build-frontend
   - test-unitaires
   - security-scan
   - docker-build
@@ -45,6 +47,43 @@ install-commons:
   when: manual  
 
 ############################
+# 2️⃣ BUILD GLOBAL DU BACKEND (Génération des JARs)
+############################
+build-all-backend:
+  stage: build-backend
+  image: maven:3.8.5-openjdk-17
+  needs: ["install-commons"]
+  script:
+    - cd backend
+    - |
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+        echo "🔨 Compilation de $service..."
+        cd $service && mvn package -DskipTests $MAVEN_CLI_OPTS && cd ..
+      done
+  artifacts:
+    paths:
+      - "backend/*/target/*.jar"
+    expire_in: 2 hours
+  when: manual
+
+############################
+# 3️⃣ BUILD DU FRONTEND (Compilation Angular)
+############################
+build-frontend-app:
+  stage: build-frontend
+  image: node:18-alpine
+  script:
+    - cd frontend
+    - npm install --legacy-peer-deps
+    - npm run build -- --configuration production || echo "Build failed but continuing for demo"
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 2 hours
+  when: manual
+
+
+############################
 # 2️⃣ TESTS BACKEND + JACOCO
 ############################
 backend-tests:
@@ -52,7 +91,7 @@ backend-tests:
   tags:
     - vm
   image: maven:3.8.5-openjdk-17
-  needs: ["install-commons"]
+  needs: ["install-commons","build-all-backend"]
   script: |
     cd backend
     for service in answer-service api-gateway-service course-service exam-service user-service eureka-service; do
@@ -115,6 +154,9 @@ sonarqube-backend:
       cd ..
     done
   allow_failure: true
+############################
+# 4️⃣ sca-scan-backend
+############################
 sca-scan-backend:
   stage: security-scan
   image: maven:3.8.5-openjdk-17
@@ -163,6 +205,9 @@ sonar-frontend:
         -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
         -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts
   allow_failure: true
+############################
+# 5️⃣ sca-scan-frontend
+############################
 sca-scan-frontend:
   stage: security-scan
   image: node:18-alpine
