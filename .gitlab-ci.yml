@@ -2,7 +2,7 @@
 # VARIABLES GLOBALES
 ############################
 variables:
-  GIT_DEPTH: "1"
+  GIT_DEPTH: "0"
   SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
   REGISTRY_URL: "registry.gitlab.com"
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
