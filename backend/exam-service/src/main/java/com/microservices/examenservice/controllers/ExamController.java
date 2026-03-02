@@ -25,7 +25,6 @@ import com.microservices.commonservice.controller.CommonController;
 import com.microservices.examenservice.services.ExamService;
 
 @RequestMapping("exams")
-@CrossOrigin(origins = "*", allowCredentials = "false")
 @RestController
 public class ExamController extends CommonController<Exam, ExamService> {
 
