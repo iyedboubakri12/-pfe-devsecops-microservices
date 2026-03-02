@@ -18,7 +18,6 @@ import com.microservices.answerservice.models.entity.Answer;
 import com.microservices.answerservice.services.AnswerService;
 
 @RequestMapping("answers")
-@CrossOrigin(origins = "*")
 @RestController
 public class AnswerController {
 
