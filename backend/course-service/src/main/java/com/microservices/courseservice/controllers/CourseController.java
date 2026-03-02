@@ -28,7 +28,6 @@ import com.microservices.courseservice.services.CourseService;
 import javax.validation.Valid;
 
 @RequestMapping("courses")
-@CrossOrigin(origins = "*", allowCredentials = "false")
 @RestController
 public class CourseController extends CommonController<Course, CourseService> {
 
