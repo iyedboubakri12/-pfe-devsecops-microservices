@@ -1,0 +1,24 @@
+# --- MICROSERVICE USERS (via Gateway) ---
+http://172.17.0.1:8090/students/page/0/10
+http://172.17.0.1:8090/students/page/0/10/John
+http://172.17.0.1:8090/students/filter/test
+http://172.17.0.1:8090/students/students-by-course?ids=1,2
+http://172.17.0.1:8090/students/1/uploads/image
+
+# --- MICROSERVICE EXAMS (via Gateway) ---
+http://172.17.0.1:8090/exams/page/0/10
+http://172.17.0.1:8090/exams/page/0/10/maths
+http://172.17.0.1:8090/exams/filter/examen
+http://172.17.0.1:8090/exams/subjects
+http://172.17.0.1:8090/exams/answered-by-exam?questionIds=1
+
+# --- MICROSERVICE COURSES (via Gateway) ---
+http://172.17.0.1:8090/courses
+http://172.17.0.1:8090/courses/page/0/10/with-students
+http://172.17.0.1:8090/courses/page/0/10
+http://172.17.0.1:8090/courses/student/1
+
+# --- MICROSERVICE ANSWERS (via Gateway) ---
+http://172.17.0.1:8090/answers
+http://172.17.0.1:8090/answers/student/1/exam/1
+http://172.17.0.1:8090/answers/student/1/exams-replied
