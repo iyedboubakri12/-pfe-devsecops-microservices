@@ -375,7 +375,7 @@ owasp-zap-dast:
     
     # SCAN DU BACKEND (API GATEWAY) sur le port 8090
     - echo "🔍 Scan API Gateway..."
-    - zap-baseline.py -t api-urls.txt -f list  -r zap_api_report.html -J zap_api_report.json || true
+    - zap-api-scan.py -t api-urls.txt -f list -r zap_api_report.html -J zap_api_report.json || true
     
     # SCAN DU FRONTEND (ANGULAR) sur le port 4200
     - echo "🔍 Scan Frontend..."
