@@ -175,6 +175,7 @@ sca-scan-backend:
             $MAVEN_CLI_OPTS \
             -Dformat=HTML \
             -DoutputDirectory=target
+            -DnvdApiKey=$NVD_API_KEY
         ) || echo "SCA failed for $dir"
       done
   artifacts:
