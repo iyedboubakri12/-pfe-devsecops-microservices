@@ -370,32 +370,37 @@ owasp-zap-dast:
   tags:
     - vm
   script:
+    # 1. Création du dossier de travail ZAP (obligatoire)
     - mkdir -p /zap/wrk
-    - echo "🌐 Démarrage du scan dynamique sur l'architecture Microservices..."
+    - echo "🌐 Démarrage du scan dynamique (DAST)..."
     
-    # SCAN DU BACKEND (API GATEWAY) sur le port 8090
-    - echo "🔍 Scan API Gateway..."
+    # 2. SCAN DU BACKEND (Boucle sur api-urls.txt)
     - |
-      while read url; do
+      while read url || [ -n "$url" ]; do
+        # On ignore les lignes vides et les commentaires (#)
         if [[ ! -z "$url" && "$url" != "#"* ]]; then
-          echo "Attaque sur : $url"
-          zap-baseline.py -t "$url" -r "zap_report_$(echo $url | md5sum | cut -c1-8).html" || true
+          echo "🚀 Attaque sur : $url"
+          # On crée un nom unique par URL pour ne pas écraser les rapports
+          FILENAME="zap_backend_$(echo $url | md5sum | cut -c1-8)"
+          zap-baseline.py -t "$url" -r "${FILENAME}.html" -J "${FILENAME}.json" || true
         fi
       done < api-urls.txt
-    # SCAN DU FRONTEND (ANGULAR) sur le port 4200
-    - echo "🔍 Scan Frontend..."
+
+    # 3. SCAN DU FRONTEND (Angular)
+    - echo "🚀 Scan Frontend..."
     - zap-baseline.py -t http://172.17.0.1:4200 -r zap_frontend_report.html -J zap_frontend_report.json || true
     
-    # On récupère les rapports générés par ZAP
-    - cp /zap/wrk/zap_api_report.html .
-    - cp /zap/wrk/zap_frontend_report.html .
-    - cp /zap/wrk/zap_api_report.json .
-    - cp /zap/wrk/zap_frontend_report.json .
+    # 4. RÉCUPÉRATION DE TOUS LES RAPPORTS (CORRECTIF)
+    - echo "📦 Collecte de tous les rapports générés..."
+    # On utilise l'étoile (*) pour copier TOUS les rapports créés dans la boucle
+    - cp /zap/wrk/*.html . || echo "Aucun rapport HTML trouvé"
+    - cp /zap/wrk/*.json . || echo "Aucun rapport JSON trouvé"
     
   artifacts:
     when: always
     paths:
       - "*.html"
       - "*.json"
+    expire_in: 1 week
   allow_failure: true
   when: manual
