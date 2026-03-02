@@ -375,8 +375,13 @@ owasp-zap-dast:
     
     # SCAN DU BACKEND (API GATEWAY) sur le port 8090
     - echo "🔍 Scan API Gateway..."
-    - zap-api-scan.py -t api-urls.txt -f list -r zap_api_report.html -J zap_api_report.json || true
-    
+    - |
+      while read url; do
+        if [[ ! -z "$url" && "$url" != "#"* ]]; then
+          echo "Attaque sur : $url"
+          zap-baseline.py -t "$url" -r "zap_report_$(echo $url | md5sum | cut -c1-8).html" || true
+        fi
+      done < api-urls.txt
     # SCAN DU FRONTEND (ANGULAR) sur le port 4200
     - echo "🔍 Scan Frontend..."
     - zap-baseline.py -t http://172.17.0.1:4200 -r zap_frontend_report.html -J zap_frontend_report.json || true
