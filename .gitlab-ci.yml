@@ -174,14 +174,15 @@ sca-scan-backend:
           mvn org.owasp:dependency-check-maven:check \
             $MAVEN_CLI_OPTS \
             -Dformat=HTML \
-            -DoutputDirectory=target
-            -DnvdApiKey=$NVD_API_KEY
+            -DoutputDirectory=target \
+            -DnvdApiKey=$NVD_API_KEY \
+            -DskipTests
         ) || echo "SCA failed for $dir"
       done
   artifacts:
     when: always
     paths:
-      - backend/**/target/dependency-check-report.html
+      - "backend/**/target/dependency-check-report.html"
   allow_failure: true
   when: manual
 
