@@ -28,7 +28,6 @@ import com.microservices.commonstudent.models.entity.Student;
 import com.microservices.users.services.StudentService;
 
 @RestController
-@CrossOrigin(origins = "*", allowCredentials = "false")
 @RequestMapping("/students")
 public class StudentController {
 
