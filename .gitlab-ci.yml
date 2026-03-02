@@ -162,6 +162,8 @@ sonarcloud-backend:
 ############################
 sca-scan-backend:
   stage: security-scan
+  tags:
+    - vm
   image: maven:3.8.5-openjdk-17
   needs: ["backend-tests"]
   script:
@@ -218,6 +220,8 @@ sonarcloud-frontend:
 ############################
 sca-scan-frontend:
   stage: security-scan
+  tags:
+    - vm
   image: node:18-alpine
   needs: ["frontend-tests"]
   script:
