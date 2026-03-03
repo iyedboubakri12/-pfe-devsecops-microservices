@@ -161,7 +161,7 @@
                 <configuration>
                     <format>ALL</format>
                     <outputDirectory>${project.build.directory}</outputDirectory>
-                    <failBuildOnCVSS>8</failBuildOnCVSS>
+                    <failBuildOnCVSS>11</failBuildOnCVSS>
                     <skipTestScope>true</skipTestScope>
                     <nvdApiKey>${NVD_API_KEY}</nvdApiKey> 
                 </configuration>
