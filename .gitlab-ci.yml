@@ -163,26 +163,29 @@ sonarcloud-backend:
 sca-scan-backend:
   stage: security-scan
   image: maven:3.8.5-openjdk-17
-  needs: ["backend-tests"]
+  # IMPORTANT : On récupère les JARs installés par 'install-commons'
+  needs: ["install-commons", "backend-tests"]
+  dependencies: ["install-commons", "backend-tests"]
   script:
     - cd backend
     - |
       for dir in api-gateway-service user-service exam-service course-service answer-service; do
-        echo "🔍 Scanning $dir..."
+        echo "🔍 Scanning $dir with NVD API Key..."
+        # On utilise 'ALL' pour générer HTML (pour toi) et JSON (pour JIRA/DefectDojo)
         (
           cd $dir && \
           mvn org.owasp:dependency-check-maven:check \
             $MAVEN_CLI_OPTS \
-            -Dformat=HTML \
-            -DoutputDirectory=target \
+            -Dformat=ALL \
             -DnvdApiKey=$NVD_API_KEY \
             -DskipTests
-        ) || echo "SCA failed for $dir"
+        ) || echo "⚠️ Faille critique détectée dans $dir"
       done
   artifacts:
     when: always
     paths:
-      - "backend/**/target/dependency-check-report.html"
+      # On récupère tous les rapports générés (HTML + JSON)
+      - "backend/*/target/dependency-check-report.*"
   allow_failure: true
   when: manual
 
