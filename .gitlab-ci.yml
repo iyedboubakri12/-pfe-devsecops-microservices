@@ -162,20 +162,27 @@ sonarcloud-backend:
 ############################
 sca-scan-backend:
   stage: security-scan
-  image: 
-    name: aquasec/trivy:latest
-    entrypoint: [""]
+  image: maven:3.8.5-openjdk-17
+  needs: ["backend-tests"]
   script:
-    - mkdir -p reports
-    - echo "🛡️ Scan SCA avec Trivy (Remplace OWASP pour éviter l'erreur 403)"
-    # Scan de tout le dossier backend (détecte automatiquement les pom.xml)
-    - trivy fs --format template --template "@/contrib/html.tpl" --output reports/backend-sca-report.html --severity HIGH,CRITICAL backend/
-    # Génère aussi un JSON pour DefectDojo
-    - trivy fs --format json --output reports/backend-sca.json backend/
+    - cd backend
+    - |
+      for dir in api-gateway-service user-service exam-service course-service answer-service; do
+        echo "🔍 Scanning $dir..."
+        (
+          cd $dir && \
+          mvn org.owasp:dependency-check-maven:check \
+            $MAVEN_CLI_OPTS \
+            -Dformat=HTML \
+            -DoutputDirectory=target \
+            -DnvdApiKey=$NVD_API_KEY \
+            -DskipTests
+        ) || echo "SCA failed for $dir"
+      done
   artifacts:
     when: always
     paths:
-      - reports/
+      - "backend/**/target/dependency-check-report.html"
   allow_failure: true
   when: manual
 
