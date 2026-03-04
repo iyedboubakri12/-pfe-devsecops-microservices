@@ -141,7 +141,7 @@ sonarcloud-backend:
   tags:
     - vm
   image: maven:3.8.5-openjdk-17
-  needs: ["backend-tests"]
+  needs: ["install-commons","build-all-backend","backend-tests"]
   script:
     - cd backend
     - |
@@ -149,7 +149,7 @@ sonarcloud-backend:
         echo "🚀 Analyse Cloud de $service..."
         (cd $service && mvn verify sonar:sonar \
           $MAVEN_CLI_OPTS \
-          -Dsonar.projectKey=iyed-pfe-sportapp-backend \
+          -Dsonar.projectKey=iyed-pfe-devsecops\
           -Dsonar.organization=$SONAR_ORGANIZATION \
           -Dsonar.host.url=$SONAR_HOST_URL \
           -Dsonar.login=$SONAR_TOKEN \
