@@ -162,34 +162,21 @@ sonarcloud-backend:
 ############################
 sca-scan-backend:
   stage: security-scan
-  image: maven:3.8.5-openjdk-17
-  # IMPORTANT : On récupère les JARs installés par 'install-commons'
-  needs: ["install-commons", "backend-tests"]
-  dependencies: ["install-commons", "backend-tests"]
+  tags:
+    - vm
+  image: 
+    name: aquasec/trivy:latest
+    entrypoint: [""]
   script:
-    - cd backend
-    - |
-      for dir in api-gateway-service user-service exam-service course-service answer-service; do
-        echo "🔍 Scanning $dir with NVD API Key..."
-        # On utilise 'ALL' pour générer HTML (pour toi) et JSON (pour JIRA/DefectDojo)
-        (
-          cd $dir && \
-          mvn org.owasp:dependency-check-maven:check \
-            $MAVEN_CLI_OPTS \
-            -Dformat=ALL \
-            -DnvdApiKey=$NVD_API_KEY \
-            -DskipTests \
-            -DossindexAnalyzerEnabled=false \
-            -DfailOnError=false
-        ) || echo "⚠️ Faille critique détectée dans $dir"
-      done
+    - mkdir -p reports
+    - echo "🛡️ Analyse SCA ultra-rapide avec Trivy..."
+    # Trivy scanne directement les pom.xml sans avoir besoin de compiler !
+    - trivy fs --format template --template "@/contrib/html.tpl" --output reports/backend-sca-report.html --severity HIGH,CRITICAL backend/
   artifacts:
     when: always
     paths:
-      # On récupère tous les rapports générés (HTML + JSON)
-      - "backend/**/target/dependency-check-report.*"
+      - reports/backend-sca-report.html
   allow_failure: true
-  when: manual
 
 ############################
 # 5️⃣ SONARQUBE FRONTEND
