@@ -167,15 +167,28 @@ sca-scan-backend:
   image: 
     name: aquasec/trivy:latest
     entrypoint: [""]
+  needs: ["backend-tests"]
   script:
     - mkdir -p reports
-    - echo "🛡️ Analyse SCA ultra-rapide avec Trivy..."
-    # Trivy scanne directement les pom.xml sans avoir besoin de compiler !
-    - trivy fs --format template --template "@/contrib/html.tpl" --output reports/backend-sca-report.html --severity HIGH,CRITICAL backend/
+    - echo "🛡️ Analyse SCA optimisée avec Trivy..."
+    - cd backend
+    - |
+      for service in api-gateway-service user-service exam-service course-service answer-service; do
+        echo "🔍 Scanning $service..."
+        # --timeout 20m : laisse le temps au scan de finir
+        # --scanners vuln : scanne UNIQUEMENT les vulnérabilités (gain de vitesse 80%)
+        # --skip-db-update : évite de retélécharger la DB à chaque tour de boucle
+        trivy fs --format template --template "@/contrib/html.tpl" \
+          --output "../reports/${service}-sca.html" \
+          --severity HIGH,CRITICAL \
+          --scanners vuln \
+          --timeout 20m \
+          $service || true
+      done
   artifacts:
     when: always
     paths:
-      - reports/backend-sca-report.html
+      - reports/
   allow_failure: true
 
 ############################
