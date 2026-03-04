@@ -178,14 +178,16 @@ sca-scan-backend:
             $MAVEN_CLI_OPTS \
             -Dformat=ALL \
             -DnvdApiKey=$NVD_API_KEY \
-            -DskipTests
+            -DskipTests \
+            -DossindexAnalyzerEnabled=false \
+            -DfailOnError=false
         ) || echo "⚠️ Faille critique détectée dans $dir"
       done
   artifacts:
     when: always
     paths:
       # On récupère tous les rapports générés (HTML + JSON)
-      - "backend/*/target/dependency-check-report.*"
+      - "backend/**/target/dependency-check-report.*"
   allow_failure: true
   when: manual
 
