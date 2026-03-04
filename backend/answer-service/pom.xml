@@ -187,25 +187,6 @@
                 <artifactId>sonar-maven-plugin</artifactId>
                 <version>3.9.1.2184</version>
             </plugin>
-            <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
-                <version>12.1.0</version>
-                <configuration>
-                    <format>ALL</format>
-                    <outputDirectory>${project.build.directory}</outputDirectory>
-                    <failBuildOnCVSS>11</failBuildOnCVSS>
-                    <skipTestScope>true</skipTestScope>
-                    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey> 
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 </project>
