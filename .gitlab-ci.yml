@@ -374,41 +374,33 @@ secret-detection:
 
 owasp-zap-dast:
   stage: dast-scan
-  image: zaproxy/zap-stable:latest
   tags:
     - vm
+  image: zaproxy/zap-stable:latest
+  # ... (reste de ta config)
   script:
-    # 1. Création du dossier de travail ZAP (obligatoire)
     - mkdir -p /zap/wrk
-    - echo "🌐 Démarrage du scan dynamique (DAST)..."
-    
-    # 2. SCAN DU BACKEND (Boucle sur api-urls.txt)
     - |
       while read url || [ -n "$url" ]; do
-        # On ignore les lignes vides et les commentaires (#)
         if [[ ! -z "$url" && "$url" != "#"* ]]; then
-          echo "🚀 Attaque sur : $url"
-          # On crée un nom unique par URL pour ne pas écraser les rapports
           FILENAME="zap_backend_$(echo $url | md5sum | cut -c1-8)"
-          zap-baseline.py -t "$url" -r "${FILENAME}.html" -J "${FILENAME}.json" || true
+          # AJOUT DU FLAG -x pour générer le XML
+          zap-baseline.py -t "$url" -r "${FILENAME}.html" -J "${FILENAME}.json" -x "${FILENAME}.xml" || true
         fi
       done < api-urls.txt
 
-    # 3. SCAN DU FRONTEND (Angular)
-    - echo "🚀 Scan Frontend..."
-    - zap-baseline.py -t http://172.17.0.1:4200 -r zap_frontend_report.html -J zap_frontend_report.json || true
+    # Scan Frontend avec XML aussi
+    - zap-baseline.py -t http://172.17.0.1:4200 -r zap_frontend_report.html -J zap_frontend_report.json -x zap_frontend_report.xml || true
     
-    # 4. RÉCUPÉRATION DE TOUS LES RAPPORTS (CORRECTIF)
-    - echo "📦 Collecte de tous les rapports générés..."
-    # On utilise l'étoile (*) pour copier TOUS les rapports créés dans la boucle
-    - cp /zap/wrk/*.html . || echo "Aucun rapport HTML trouvé"
-    - cp /zap/wrk/*.json . || echo "Aucun rapport JSON trouvé"
-    
+    - cp /zap/wrk/*.html . || true
+    - cp /zap/wrk/*.json . || true
+    - cp /zap/wrk/*.xml . || true # On récupère les XML
   artifacts:
     when: always
     paths:
       - "*.html"
       - "*.json"
+      - "*.xml"
     expire_in: 1 week
   allow_failure: true
   when: manual
