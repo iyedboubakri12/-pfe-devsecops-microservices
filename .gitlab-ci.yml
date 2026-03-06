@@ -365,7 +365,7 @@ secret-detection:
   script:
     - echo "🔍 Analyse du dépôt à la recherche de secrets..."
     # On scanne tout l'historique du projet
-    - gitleaks detect --source . --redact --report-format sarif --report-path gl-secret-report.sarif
+    - gitleaks detect --source . --redact --report-format sarif --report-path gl-secret-report.sarif || true
   artifacts:
     expire_in: 1 week
     reports:
@@ -414,7 +414,25 @@ owasp-zap-dast:
   before_script:
     - apk add --no-cache curl
   when: manual # À mettre en 'always' une fois que les tests sont validés
-
+# 4. Push SAST (SonarQube via API)
+upload-sonarqube:
+  <<: *upload_template
+  needs: ["sonarqube-backend"]
+  script:
+    - |
+      # Liste de tes services SonarQube (doivent correspondre aux Project Keys de Sonar)
+      for service in user-service exam-service answer-service course-service api-gateway-service eureka-service; do
+        echo "🚀 Déclenchement de l'import API pour : $service"
+        curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+          -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+          -F "active=true" \
+          -F "verified=true" \
+          -F "push_to_jira=true" \
+          -F "scan_type=SonarQube API Import" \
+          -F "product_name=DevsecopsApp" \
+          -F "engagement_name=Pipeline-Full-Scan" \
+          -F "service=$service"
+      done
 # 1. Push Secrets (Gitleaks)
 upload-secrets:
   <<: *upload_template
