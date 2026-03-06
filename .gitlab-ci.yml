@@ -32,7 +32,6 @@ stages:
   - docker-scan
   - dast-scan
 
-
 ############################
 # 1️⃣ INSTALLATION DES MODULES COMMUNS
 ############################

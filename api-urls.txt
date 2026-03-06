@@ -1,3 +1,4 @@
+
 # --- MICROSERVICE USERS (via Gateway) ---
 http://172.17.0.1:8090/students/page/0/10
 http://172.17.0.1:8090/students/page/0/10/John
@@ -21,4 +22,5 @@ http://172.17.0.1:8090/courses/student/1
 # --- MICROSERVICE ANSWERS (via Gateway) ---
 http://172.17.0.1:8090/answers
 http://172.17.0.1:8090/answers/student/1/exam/1
+>>>>>>> d079adce (ajouter apiurl.txt)
 http://172.17.0.1:8090/answers/student/1/exams-replied
