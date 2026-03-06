@@ -217,7 +217,7 @@ sonar-frontend:
         -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
         -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts
   allow_failure: true
-  when: manual
+  
 ############################
 # 5️⃣ sca-scan-frontend
 ############################
@@ -241,7 +241,7 @@ sca-scan-frontend:
       - frontend/npm-audit-report.txt
     expire_in: 1 week
   allow_failure: true
-  when: manual
+  
 ############################
 # 8️⃣ BUILD backend & PUSH TO REGISTRY (CORRIGÉ)
 ############################
@@ -370,7 +370,7 @@ secret-detection:
     reports:
       sast: gl-secret-report.sarif
   allow_failure: true
-  when: manual
+  
 
 owasp-zap-dast:
   stage: dast-scan
