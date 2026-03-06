@@ -31,6 +31,7 @@ stages:
   - docker-build
   - docker-scan
   - dast-scan
+  - upload-defectdojo
 
 
 ############################
@@ -404,3 +405,58 @@ owasp-zap-dast:
     expire_in: 1 week
   allow_failure: true
   when: manual
+
+.upload_template: &upload_template
+  image: alpine:latest
+  stage: upload-defectdojo
+  tags:
+    - vm
+  before_script:
+    - apk add --no-cache curl
+  when: manual # À mettre en 'always' une fois que les tests sont validés
+
+# 1. Push Secrets (Gitleaks)
+upload-secrets:
+  <<: *upload_template
+  needs: ["secret-detection"]
+  script:
+    - |
+      curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+        -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+        -F "active=true" -F "verified=true" -F "push_to_jira=true" \
+        -F "scan_type=SARIF" \
+        -F "product_name=DevsecopsApp" \
+        -F "engagement_name=Pipeline-Full-Scan" \
+        -F "file=@gl-secret-report.sarif"
+
+# 2. Push Container Scan (Trivy) - Exemple pour un service
+upload-trivy-backend:
+  <<: *upload_template
+  needs: ["container_scan"]
+  script:
+    - |
+      for file in reports/*-report.json; do
+        curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+          -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+          -F "active=true" -F "verified=true" -F "push_to_jira=true" \
+          -F "scan_type=Trivy Scan" \
+          -F "product_name=DevsecopsApp" \
+          -F "engagement_name=Pipeline-Full-Scan" \
+          -F "file=@$file"
+      done
+
+# 3. Push DAST (ZAP XML)
+upload-zap-dast:
+  <<: *upload_template
+  needs: ["owasp-zap-dast"]
+  script:
+    - |
+      for file in *.xml; do
+        curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+          -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+          -F "active=true" -F "verified=true" -F "push_to_jira=true" \
+          -F "scan_type=ZAP Scan" \
+          -F "product_name=DevsecopsApp" \
+          -F "engagement_name=Pipeline-Full-Scan" \
+          -F "file=@$file"
+      done
