@@ -7,8 +7,6 @@ variables:
   REGISTRY_URL: "registry.gitlab.com"
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
   DOCKER_DRIVER: overlay2
-  
-
 ############################
 # CACHE
 ############################
