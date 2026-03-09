@@ -37,7 +37,7 @@ stages:
 install-commons:
   stage: build-shared
   tags:
-    - vm
+    - pfe-shell
   image: maven:3.8.5-openjdk-17
   script:
     - cd backend/common-service && mvn install -DskipTests $MAVEN_CLI_OPTS
@@ -51,7 +51,7 @@ install-commons:
 build-all-backend:
   stage: build-all
   tags:
-    - vm 
+    - pfe-shell
   image: maven:3.8.5-openjdk-17
   needs: ["install-commons"]
   script:
@@ -73,7 +73,7 @@ build-all-backend:
 build-frontend-app:
   stage: build-all
   tags:
-    - vm
+    - pfe-shell
   image: node:18-alpine
   script:
     - cd frontend
@@ -92,7 +92,7 @@ build-frontend-app:
 backend-tests:
   stage: test-unitaires
   tags:
-    - vm
+    - pfe-shell
   image: maven:3.8.5-openjdk-17
   needs: ["install-commons","build-all-backend"]
   script: |
@@ -117,7 +117,7 @@ backend-tests:
 frontend-tests:
   stage: test-unitaires
   tags:
-    - vm
+    - pfe-shell
   image: node:18-alpine
   script:
     - cd frontend
@@ -137,7 +137,7 @@ frontend-tests:
 sonarqube-backend:
   stage: security-scan
   tags:
-    - vm
+    - pfe-shell
   image: maven:3.8.5-openjdk-17
   needs:
   - job: backend-tests
@@ -163,7 +163,7 @@ sonarqube-backend:
 sca-scan-backend:
   stage: security-scan
   tags:
-    - vm
+    - pfe-shell
   image: 
     name: aquasec/trivy:latest
     entrypoint: [""]
@@ -197,7 +197,7 @@ sca-scan-backend:
 sonar-frontend:
   stage: security-scan
   tags:
-    - vm
+    - pfe-shell
   image: 
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
@@ -222,7 +222,7 @@ sonar-frontend:
 sca-scan-frontend:
   stage: security-scan
   tags:
-    - vm
+    - pfe-shell
   image: node:18-alpine
   needs: ["frontend-tests"]
   script:
@@ -246,7 +246,7 @@ sca-scan-frontend:
 docker-build-backend:
   stage: docker-build
   tags:
-    - vm
+    - pfe-shell
   image: docker:24.0
   services:
     - name: docker:24.0-dind
@@ -273,7 +273,7 @@ docker-build-backend:
 docker-build-frontend:
   stage: docker-build
   tags:
-    - vm
+    - pfe-shell
   image: docker:24.0
   services:
     - name: docker:24.0-dind
@@ -297,7 +297,7 @@ docker-build-frontend:
 container_scan:
   stage: docker-scan
   tags:
-    - vm 
+    - pfe-shell 
   image:
     name: aquasec/trivy:latest
     entrypoint: [""]
@@ -355,7 +355,7 @@ container_scan:
 secret-detection:
   stage: security-scan
   tags:
-    - vm
+    - pfe-shell
   image: 
     name: zricethezav/gitleaks:latest
     entrypoint: [""]
@@ -373,7 +373,7 @@ secret-detection:
 owasp-zap-dast:
   stage: dast-scan
   tags:
-    - vm
+    - pfe-shell
   image: zaproxy/zap-stable:latest
   # ... (reste de ta config)
   script:
@@ -407,7 +407,7 @@ owasp-zap-dast:
   image: alpine:latest
   stage: upload-defectdojo
   tags:
-    - vm
+    - pfe-shell
   before_script:
     - apk add --no-cache curl
   when: manual # À mettre en 'always' une fois que les tests sont validés
