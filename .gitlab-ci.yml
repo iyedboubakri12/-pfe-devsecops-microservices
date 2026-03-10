@@ -402,7 +402,7 @@ owasp-zap-dast:
   allow_failure: true
   when: manual
 
-upload_template: &upload_template
+.upload_template: &upload_template
   image: alpine:latest
   stage: upload-defectdojo
   tags:
