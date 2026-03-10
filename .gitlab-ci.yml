@@ -85,7 +85,6 @@ build-frontend-app:
     expire_in: 2 hours
   when: manual
 
-
 ############################
 # 2️⃣ TESTS BACKEND + JACOCO
 ############################
