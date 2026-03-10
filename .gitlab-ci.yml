@@ -401,7 +401,6 @@ owasp-zap-dast:
     expire_in: 1 week
   allow_failure: true
   when: manual
-
 .upload_template: &upload_template
   image: alpine:latest
   stage: upload-defectdojo
