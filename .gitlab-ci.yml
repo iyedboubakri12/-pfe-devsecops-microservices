@@ -402,32 +402,31 @@ owasp-zap-dast:
   allow_failure: true
   when: manual
 
-.upload_template: &upload_template
+upload_template: &upload_template
   image: alpine:latest
   stage: upload-defectdojo
   tags:
-     - vm
+    - vm
   before_script:
     - apk add --no-cache curl
-  when: manual # À mettre en 'always' une fois que les tests sont validés
-# 4. Push SAST (SonarQube via API)
+  when: manual
 upload-sonarqube:
   <<: *upload_template
   needs: ["sonarqube-backend"]
   script:
     - |
-      # Liste de tes services SonarQube (doivent correspondre aux Project Keys de Sonar)
       for service in user-service exam-service answer-service course-service api-gateway-service eureka-service; do
-        echo "🚀 Déclenchement de l'import API pour : $service"
+        echo "Import SonarQube pour $service"
+
         curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
           -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
-          -F "active=true" \
-          -F "verified=true" \
-          -F "push_to_jira=true" \
           -F "scan_type=SonarQube API Import" \
           -F "product_name=DevsecopsApp" \
           -F "engagement_name=Pipeline-Full-Scan" \
-          -F "service=$service"
+          -F "service=$service" \
+          -F "active=true" \
+          -F "verified=true" \
+          -F "push_to_jira=false"
       done
 # 1. Push Secrets (Gitleaks)
 upload-secrets:
@@ -450,9 +449,9 @@ upload-trivy-backend:
   script:
     - |
       for file in reports/*-report.json; do
+        echo "Upload $file"
         curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
           -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
-          -F "active=true" -F "verified=true" -F "push_to_jira=true" \
           -F "scan_type=Trivy Scan" \
           -F "product_name=DevsecopsApp" \
           -F "engagement_name=Pipeline-Full-Scan" \
@@ -461,17 +460,25 @@ upload-trivy-backend:
 
 # 3. Push DAST (ZAP XML)
 upload-zap-dast:
-  <<: *upload_template
-  needs: ["owasp-zap-dast"]
+  stage: upload-defectdojo
+  image: alpine:latest
+  needs: ["owasp-zap-dast"] # <--- RÉCUPÈRE les artifacts du job ZAP
+  before_script:
+    - apk add --no-cache curl
   script:
     - |
-      for file in *.xml; do
-        curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
-          -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
-          -F "active=true" -F "verified=true" -F "push_to_jira=true" \
-          -F "scan_type=ZAP Scan" \
-          -F "product_name=DevsecopsApp" \
-          -F "engagement_name=Pipeline-Full-Scan" \
-          -F "file=@$file"
-      done
-
+      # On vérifie s'il y a des fichiers XML avant de lancer curl
+      if ls *.xml >/dev/null 2>&1; then
+        for file in *.xml; do
+          echo "📤 Uploading $file to DefectDojo..."
+          curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+            -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+            -F "active=true" \
+            -F "verified=true" \
+            -F "push_to_jira=true" \
+            -F "scan_type=ZAP Scan" \
+            -F "product_name=DevsecopsApp" \
+            -F "engagement_name=Pipeline-Full-Scan" \
+            -F "file=@$file" # Le @ indique à curl de lire le fichier
+        done
+      
