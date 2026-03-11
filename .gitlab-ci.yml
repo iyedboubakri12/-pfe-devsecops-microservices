@@ -405,7 +405,7 @@ owasp-zap-dast:
   stage: upload-defectdojo
   image: alpine:latest
   tags:
-    - pfe-shell
+    - vm
   before_script:
     - apk add --no-cache curl
     - |
