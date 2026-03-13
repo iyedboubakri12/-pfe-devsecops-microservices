@@ -3,7 +3,7 @@
 ############################
 variables:
   GIT_DEPTH: "1"
-  SONAR_HOST_URL: "http://192.168.1.117:9000"
+  SONAR_HOST_URL: "http://192.168.1.200:9000"
   REGISTRY_URL: "registry.gitlab.com"
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
   DOCKER_DRIVER: overlay2
@@ -43,8 +43,6 @@ install-commons:
     - cd backend/common-service && mvn install -DskipTests $MAVEN_CLI_OPTS
     - cd ../common-student && mvn install -DskipTests $MAVEN_CLI_OPTS
     - cd ../common-exam && mvn install -DskipTests $MAVEN_CLI_OPTS
-  
-
 ############################
 # 2️⃣ BUILD GLOBAL DU BACKEND (Génération des JARs)
 ############################
