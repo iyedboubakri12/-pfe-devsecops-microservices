@@ -1,26 +1,24 @@
 server:
-  port: 8082
+  port: 8084  # Port modifié pour éviter le conflit avec Course-service (8082)
+
 spring:
   application:
     name: exam-service
   datasource:
-    url: jdbc:mysql://mysql:3306/microservices_db
+    url: jdbc:mysql://mysql:3306/microservices_db?createDatabaseIfNotExist=true
     username: root
     password: root
   jpa:
     hibernate:
       ddl-auto: update
-  cors:
-    allowed-origins: "*"
-    allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - DELETE
-      - OPTIONS
-    allowed-headers: "*"
-    allow-credentials: false
-    max-age: 3600
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+# LA SECTION CORS A ÉTÉ SUPPRIMÉE ICI 
+# C'est l'API Gateway (port 8080) qui gère le CORS pour tout le monde
+
 eureka:
   client:
     service-url:
@@ -28,4 +26,5 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
   instance:
+    instance-id: ${spring.application.name}:${random.value}
     prefer-ip-address: true
