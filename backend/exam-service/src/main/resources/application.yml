@@ -4,7 +4,7 @@ spring:
 application:
 name: exam-service
 datasource:
-url: jdbc:mysql://mysql:3306/microservices_db
+url: mysql://mysql:3306/db_microservices_exams?createDatabaseIfNotExist=true
 username: root
 password: root
 jpa:
