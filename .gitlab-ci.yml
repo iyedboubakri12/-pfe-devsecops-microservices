@@ -55,7 +55,7 @@ build-all-backend:
   script:
     - cd backend
     - |
-      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service zuul-service; do
+      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service ; do
         echo "🔨 Compilation de $service..."
         cd $service && mvn package -DskipTests $MAVEN_CLI_OPTS && cd ..
       done
