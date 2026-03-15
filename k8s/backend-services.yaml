@@ -1,0 +1,166 @@
+# 1. USER-SERVICE (Postgres)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry-secret
+      containers:
+      - name: user-service
+        image: registry.gitlab.com/devsecopsi-group/devsecops-project/user-service:latest
+        ports:
+        - containerPort: 8081
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgres:5432/microservices_db
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://eureka-service:8761/eureka/
+        resources:
+          limits: { memory: "512Mi" }
+          requests: { memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 8081
+---
+
+# 2. COURSE-SERVICE (MySQL)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: course-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: course-service
+  template:
+    metadata:
+      labels:
+        app: course-service
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry-secret
+      containers:
+      - name: course-service
+        image: registry.gitlab.com/devsecopsi-group/devsecops-project/course-service:latest
+        ports:
+        - containerPort: 8082
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:mysql://mysql:3306/db_microservices_courses
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://eureka-service:8761/eureka/
+        resources:
+          limits: { memory: "512Mi" }
+          requests: { memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: course-service
+spec:
+  selector:
+    app: course-service
+  ports:
+    - port: 8082
+---
+
+# 3. ANSWER-SERVICE (MongoDB)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: answer-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: answer-service
+  template:
+    metadata:
+      labels:
+        app: answer-service
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry-secret
+      containers:
+      - name: answer-service
+        image: registry.gitlab.com/devsecopsi-group/devsecops-project/answer-service:latest
+        ports:
+        - containerPort: 8083
+        env:
+        - name: SPRING_DATA_MONGODB_URI
+          value: mongodb://mongodb:27017/microservices_answers_db
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://eureka-service:8761/eureka/
+        resources:
+          limits: { memory: "512Mi" }
+          requests: { memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: answer-service
+spec:
+  selector:
+    app: answer-service
+  ports:
+    - port: 8083
+---
+
+# 4. EXAM-SERVICE (MySQL)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exam-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: exam-service
+  template:
+    metadata:
+      labels:
+        app: exam-service
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry-secret
+      containers:
+      - name: exam-service
+        image: registry.gitlab.com/devsecopsi-group/devsecops-project/exam-service:latest
+        ports:
+        - containerPort: 8084
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:mysql://mysql:3306/microservices_db
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://eureka-service:8761/eureka/
+        resources:
+          limits: { memory: "512Mi" }
+          requests: { memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: exam-service
+spec:
+  selector:
+    app: exam-service
+  ports:
+    - port: 8084
