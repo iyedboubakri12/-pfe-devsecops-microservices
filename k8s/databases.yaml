@@ -34,11 +34,15 @@ spec:
           value: microservices_db
         - name: POSTGRES_PASSWORD
           value: postgres
+        - name: PGDATA # On ajoute cette variable
+          value: /var/lib/postgresql/data/pgdata
         volumeMounts:
         - name: postgre-storage
           mountPath: /var/lib/postgresql/data
+          subPath: postgres-data # C'est CA qui règle le problème !
       volumes:
       - name: postgre-storage
+        persistentVolumeClaim: { claimName: postgres-pvc }
         persistentVolumeClaim: { claimName: postgres-pvc }
 ---
 # 4. Déploiement MySQL
