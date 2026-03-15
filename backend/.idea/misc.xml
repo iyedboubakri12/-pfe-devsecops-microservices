@@ -7,7 +7,6 @@
         <option value="$PROJECT_DIR$/common-exam/pom.xml" />
         <option value="$PROJECT_DIR$/exam-service/pom.xml" />
         <option value="$PROJECT_DIR$/user-service/pom.xml" />
-        <option value="$PROJECT_DIR$/zuul-service/pom.xml" />
         <option value="$PROJECT_DIR$/answer-service/pom.xml" />
         <option value="$PROJECT_DIR$/common-service/pom.xml" />
         <option value="$PROJECT_DIR$/common-student/pom.xml" />
