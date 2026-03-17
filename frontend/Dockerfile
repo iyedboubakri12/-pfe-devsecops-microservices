@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install -g @angular/cli@16 && npm install --legacy-peer-deps
 COPY . .
-RUN npm run build
+RUN npm run build -- --configuration production
 
 FROM nginx:alpine
 COPY --from=build /app/dist/demo /usr/share/nginx/html/
