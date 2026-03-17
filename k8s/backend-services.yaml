@@ -64,7 +64,7 @@ spec:
         - containerPort: 8082
         env:
         - name: SPRING_DATASOURCE_URL
-          value: jdbc:mysql://mysql:3306/db_microservices_courses
+          value: dbc:mysql://mysql.default.svc.cluster.local:3306/microservices_db
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: http://eureka-service:8761/eureka/
         resources:
@@ -148,7 +148,7 @@ spec:
         - containerPort: 8084
         env:
         - name: SPRING_DATASOURCE_URL
-          value: jdbc:mysql://mysql:3306/microservices_db
+          value: dbc:mysql://mysql.default.svc.cluster.local:3306/microservices_db
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: http://eureka-service:8761/eureka/
         resources:
