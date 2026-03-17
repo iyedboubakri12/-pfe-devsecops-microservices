@@ -1,0 +1,35 @@
+# SERVICE POUR POSTGRES
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres # C'est ce nom que User-service cherche
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+# SERVICE POUR MYSQL
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql # C'est ce nom que Course et Exam cherchent
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+# SERVICE POUR MONGODB (Pour answer-service)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+spec:
+  selector:
+    app: mongodb
+  ports:
+    - port: 27017
+      targetPort: 27017
