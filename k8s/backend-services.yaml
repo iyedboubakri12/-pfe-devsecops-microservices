@@ -25,6 +25,8 @@ spec:
           value: jdbc:postgresql://postgres:5432/microservices_db
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: http://eureka-service:8761/eureka/
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          value: update
         resources:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
