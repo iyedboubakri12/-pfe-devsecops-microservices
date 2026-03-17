@@ -1,30 +1,33 @@
- package com.microservices.apigatewayservice;
+package com.microservices.apigatewayservice;
 
-   import org.springframework.context.annotation.Bean;
-   import org.springframework.context.annotation.Configuration;
-   import org.springframework.web.cors.CorsConfiguration;
-   import org.springframework.web.cors.reactive.CorsWebFilter;
-   import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 
-   import java.util.Arrays;
+@Configuration
+public class CorsConfig {
 
-   @Configuration
-   public class CorsConfig {
+    @Bean
+    public CorsWebFilter corsWebFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        
+        // 1. On autorise le localhost (pour tes tests) ET l'IP réelle du Cloud
+        config.setAllowedOrigins(Arrays.asList(
+            "http://localhost:4200", 
+            "http://129.212.195.224" // <--- TON IP FRONTEND DIGITALOCEAN
+        ));
 
-       @Bean
-       public CorsWebFilter corsWebFilter() {
-           CorsConfiguration config = new CorsConfiguration();
-           config.setAllowedOrigins(Arrays.asList("http://localhost:4200", "*"));
+        config.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
+        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowCredentials(true); // Indispensable pour l'authentification
+        config.setMaxAge(3600L);
 
-  config.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
-           config.setAllowedHeaders(java.util.Arrays.asList("*"));
-           config.setAllowCredentials(false);
-           config.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
 
-           UrlBasedCorsConfigurationSource source = new
-  UrlBasedCorsConfigurationSource();
-           source.registerCorsConfiguration("/**", config);
-
-           return new CorsWebFilter(source);
-       }
-   }
+        return new CorsWebFilter(source);
+    }
+}
