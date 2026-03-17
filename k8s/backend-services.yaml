@@ -1,4 +1,4 @@
-# 1. USER-SERVICE (Postgres)
+# 1. USER-SERVICE
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,6 +21,8 @@ spec:
         ports:
         - containerPort: 8081
         env:
+        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS # AJOUT CRUCIAL : Fix Gateway 500
+          value: "true"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:postgresql://postgres:5432/microservices_db
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
@@ -42,7 +44,7 @@ spec:
     - port: 8081
 ---
 
-# 2. COURSE-SERVICE (MySQL)
+# 2. COURSE-SERVICE
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -65,8 +67,14 @@ spec:
         ports:
         - containerPort: 8082
         env:
+        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS # AJOUT CRUCIAL
+          value: "true"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:mysql://mysql:3306/microservices_db
+        - name: SPRING_DATASOURCE_USERNAME
+          value: root
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: root
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: http://eureka-service:8761/eureka/
         resources:
@@ -84,7 +92,7 @@ spec:
     - port: 8082
 ---
 
-# 3. ANSWER-SERVICE (MongoDB)
+# 3. ANSWER-SERVICE
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -107,6 +115,8 @@ spec:
         ports:
         - containerPort: 8083
         env:
+        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS # AJOUT CRUCIAL
+          value: "true"
         - name: SPRING_DATA_MONGODB_URI
           value: mongodb://mongodb:27017/microservices_answers_db
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
@@ -126,7 +136,7 @@ spec:
     - port: 8083
 ---
 
-# 4. EXAM-SERVICE (MySQL)
+# 4. EXAM-SERVICE
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -149,12 +159,16 @@ spec:
         ports:
         - containerPort: 8084
         env:
+        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS # AJOUT CRUCIAL
+          value: "true"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:mysql://mysql:3306/microservices_db
+        - name: SPRING_DATASOURCE_USERNAME
+          value: root
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: root
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: http://eureka-service:8761/eureka/
-        - name: SPRING_DATASOURCE_PASSWORD  # AJOUTE CETTE LIGNE
-          value: root                       # AJOUTE CETTE LIGNE
         resources:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
