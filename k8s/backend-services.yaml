@@ -153,6 +153,8 @@ spec:
           value: jdbc:mysql://mysql:3306/microservices_db
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: http://eureka-service:8761/eureka/
+        - name: SPRING_DATASOURCE_PASSWORD  # AJOUTE CETTE LIGNE
+          value: root                       # AJOUTE CETTE LIGNE
         resources:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
