@@ -15,10 +15,7 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         
         // 1. On autorise le localhost (pour tes tests) ET l'IP réelle du Cloud
-        config.setAllowedOrigins(Arrays.asList(
-            "http://localhost:4200", 
-            "http://129.212.195.224" // <--- TON IP FRONTEND DIGITALOCEAN
-        ));
+        config.setAllowedOriginPatterns(Arrays.asList("*")); 
 
         config.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
         config.setAllowedHeaders(Arrays.asList("*"));
