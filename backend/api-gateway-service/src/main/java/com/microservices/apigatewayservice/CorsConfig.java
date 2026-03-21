@@ -14,13 +14,21 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         
-        // 1. On autorise le localhost (pour tes tests) ET l'IP réelle du Cloud
-        config.setAllowedOriginPatterns(Arrays.asList("*")); 
+        // ⚠️ Ne pas utiliser "*" si allowCredentials est true
+        config.setAllowedOriginPatterns(Arrays.asList(
+            "http://localhost:4200",        // pour dev local
+            "http://209.38.187.16",        // frontend IP actuelle
+            "https://devsecops-project.com" // futur domaine prod
+        )); 
 
-        config.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
-        config.setAllowedHeaders(Arrays.asList("*"));
-        config.setAllowCredentials(true); // Indispensable pour l'authentification
-        config.setMaxAge(3600L);
+        config.setAllowedMethods(Arrays.asList(
+            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+        ));
+        config.setAllowedHeaders(Arrays.asList(
+            "Authorization", "Content-Type", "Accept"
+        ));
+        config.setAllowCredentials(true); // nécessaire si JWT ou cookies
+        config.setMaxAge(3600L);          // cache préflight 1h
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
