@@ -1,9 +1,12 @@
-# 1. Eureka Server
+# ==========================================
+# 1️⃣ Eureka Server Deployment
+# ==========================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: eureka-service
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: eureka-service
@@ -15,11 +18,18 @@ spec:
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
-      - name: eureka-service
-        image: registry.gitlab.com/devsecopsi-group/devsecops-project/eureka-service:latest
-        ports:
-        - containerPort: 8761
+        - name: eureka-service
+          image: registry.gitlab.com/devsecopsi-group/devsecops-project/eureka-service:latest
+          ports:
+            - containerPort: 8761
+          env:
+            - name: SERVER_PORT
+              value: "8761"
+
 ---
+# ==========================================
+# 2️⃣ Eureka Service (interne au cluster)
+# ==========================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -29,13 +39,19 @@ spec:
     app: eureka-service
   ports:
     - port: 8761
+      targetPort: 8761
+  type: ClusterIP
+
 ---
-# 2. API Gateway (La porte d'entrée Cloud)
+# ==========================================
+# 3️⃣ API Gateway Deployment
+# ==========================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-gateway-service
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: api-gateway-service
@@ -47,22 +63,30 @@ spec:
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
-      - name: api-gateway-service
-        image: registry.gitlab.com/devsecopsi-group/devsecops-project/api-gateway-service:latest
-        ports:
-        - containerPort: 8090
-        env:
-        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-          value: http://eureka-service:8761/eureka/
+        - name: api-gateway-service
+          image: registry.gitlab.com/devsecopsi-group/devsecops-project/api-gateway-service:latest
+          ports:
+            - containerPort: 8090
+          env:
+            - name: SERVER_PORT
+              value: "8090"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka-service:8761/eureka
+            - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
+              value: "true"
+
 ---
+# ==========================================
+# 4️⃣ API Gateway Service (public)
+# ==========================================
 apiVersion: v1
 kind: Service
 metadata:
   name: api-gateway-service
 spec:
-  type: LoadBalancer # DigitalOcean va te donner une IP publique ici
   selector:
     app: api-gateway-service
   ports:
     - port: 80
       targetPort: 8090
+  type: LoadBalancer
