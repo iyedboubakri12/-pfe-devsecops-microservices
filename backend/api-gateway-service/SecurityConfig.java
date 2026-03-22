@@ -2,6 +2,7 @@ package com.microservices.apigatewayservice;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
@@ -15,17 +16,17 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeExchange(exchange -> exchange
 
-                // routes publiques
+                .pathMatchers(HttpMethod.OPTIONS).permitAll()
+
                 .pathMatchers("/courses/**").permitAll()
                 .pathMatchers("/exams/**").permitAll()
                 .pathMatchers("/answers/**").permitAll()
                 .pathMatchers("/users/**").permitAll()
 
-                // le reste nécessite auth
                 .anyExchange().authenticated()
             )
-            .httpBasic().disable()
-            .formLogin().disable();
+            .httpBasic(httpBasic -> httpBasic.disable())
+            .formLogin(form -> form.disable());
 
         return http.build();
     }
