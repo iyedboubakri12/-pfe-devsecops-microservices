@@ -21,8 +21,10 @@ spec:
         ports:
         - containerPort: 8081
         env:
-        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS # AJOUT CRUCIAL : Fix Gateway 500
+        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
+          value: "/students/actuator"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:postgresql://postgres:5432/microservices_db
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
@@ -67,8 +69,10 @@ spec:
         ports:
         - containerPort: 8082
         env:
-        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS # AJOUT CRUCIAL
+        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
+          value: "/courses/actuator"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:mysql://mysql:3306/microservices_db
         - name: SPRING_DATASOURCE_USERNAME
@@ -115,8 +119,10 @@ spec:
         ports:
         - containerPort: 8083
         env:
-        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS # AJOUT CRUCIAL
+        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
+          value: "/answers/actuator"
         - name: SPRING_DATA_MONGODB_URI
           value: mongodb://mongodb:27017/microservices_answers_db
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
@@ -159,8 +165,10 @@ spec:
         ports:
         - containerPort: 8084
         env:
-        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS # AJOUT CRUCIAL
+        - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
+          value: "/exams/actuator"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:mysql://mysql:3306/microservices_db
         - name: SPRING_DATASOURCE_USERNAME
