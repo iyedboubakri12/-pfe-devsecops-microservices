@@ -9,43 +9,41 @@ import { Generic } from '../models/Generic';
 })
 export abstract class CommonService<E extends Generic> {
 
-    protected baseEnpoint: string;
+  protected baseEnpoint: string;
 
-    protected headers: HttpHeaders = new HttpHeaders({ 'Content-type': 'application/json' });
+  constructor(protected http: HttpClient) {}
 
-    constructor(protected http: HttpClient) { }
+  private getHeaders(): HttpHeaders {
 
-    public getAll(): Observable<E[]> {
-      return this.http.get<E[]>(`${environment.API_URL}`);
-    }
+    const token = localStorage.getItem('token');
 
-    public getAllPages(page: string, size: string): Observable<any> {
-     return this.http.get<any>(`${this.baseEnpoint}/page/${page}/${size}`);
-    }
-    
-    public getAllPagesWithText(page: string, size: string, text: string): Observable<any> {
-      console.log('oeee', `${this.baseEnpoint}/page/${page}/${size}/${text}`);
-      const params = new HttpParams()
-        .set('page', page)
-        .set('size', size)
-        .set('text', text)
-      return this.http.get<any>(`${this.baseEnpoint}/page/${page}/${size}/${text}`, { params: params });
-    }
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    });
+  }
 
-    public getById(id: number): Observable<E> {
-      return this.http.get<E>(`${this.baseEnpoint}/${id}`);
-    }
+  public getAll(): Observable<E[]> {
+    return this.http.get<E[]>(`${this.baseEnpoint}`, { headers: this.getHeaders() });
+  }
 
-    public create(data: E): Observable<E> {
-      return this.http.post<E>(`${this.baseEnpoint}/`, data, { headers: this.headers });
-    }
+  public getAllPages(page: string, size: string): Observable<any> {
+    return this.http.get<any>(`${this.baseEnpoint}/page/${page}/${size}`, { headers: this.getHeaders() });
+  }
 
-    public update(data: E): Observable<E> {
-      return this.http.put<E>(`${this.baseEnpoint}/${data['id']}`, data, { headers: this.headers })
-    }
+  public getById(id: number): Observable<E> {
+    return this.http.get<E>(`${this.baseEnpoint}/${id}`, { headers: this.getHeaders() });
+  }
 
-    public delete(id: number): Observable<E> {
-      return this.http.delete<E>(`${this.baseEnpoint}/${id}`)
-    }
+  public create(data: E): Observable<E> {
+    return this.http.post<E>(`${this.baseEnpoint}/`, data, { headers: this.getHeaders() });
+  }
 
+  public update(data: E): Observable<E> {
+    return this.http.put<E>(`${this.baseEnpoint}/${data['id']}`, data, { headers: this.getHeaders() });
+  }
+
+  public delete(id: number): Observable<E> {
+    return this.http.delete<E>(`${this.baseEnpoint}/${id}`, { headers: this.getHeaders() });
+  }
 }
