@@ -28,6 +28,7 @@ stages:
   - security-scan
   - docker-build
   - docker-scan
+  - deploy-cloud 
   - dast-scan
   - upload-defectdojo
 
@@ -366,36 +367,54 @@ secret-detection:
       sast: gl-secret-report.sarif
   allow_failure: true
   
-
+deploy-to-digitalocean:
+  stage: deploy-cloud
+  tags:
+    - vm # Utilise ton runner shell qui a accès à kubectl
+  script:
+    - echo "🚀 Déploiement sur le Cloud DigitalOcean..."
+    # On s'assure que kubectl pointe vers le bon cluster
+    - kubectl apply -f k8s/
+    # On force le redémarrage pour prendre les dernières images du registry
+    - kubectl rollout restart deployment/api-gateway-service
+    - kubectl rollout restart deployment/user-service
+    - kubectl rollout restart deployment/course-service
+    - kubectl rollout restart deployment/exam-service
+    - kubectl rollout restart deployment/answer-service
+    - kubectl rollout restart deployment/frontend
+  only:
+    - main
 owasp-zap-dast:
   stage: dast-scan
   tags:
      - vm
-  image: zaproxy/zap-stable:latest
-  # ... (reste de ta config)
-  script:
+  before_script:
     - mkdir -p /zap/wrk
+    - chmod 777 /zap/wrk
+  script:
+    # 1. SCAN DE L'API GATEWAY (Backend)
+    - echo "🚀 Scan de l'API Gateway : http://209.38.187.208"
     - |
-      while read url || [ -n "$url" ]; do
-        if [[ ! -z "$url" && "$url" != "#"* ]]; then
-          FILENAME="zap_backend_$(echo $url | md5sum | cut -c1-8)"
-          # AJOUT DU FLAG -x pour générer le XML
-          zap-baseline.py -t "$url" -r "${FILENAME}.html" -J "${FILENAME}.json" -x "${FILENAME}.xml" || true
-        fi
-      done < api-urls.txt
-
-    # Scan Frontend avec XML aussi
-    - zap-baseline.py -t http://172.17.0.1:4200 -r zap_frontend_report.html -J zap_frontend_report.json -x zap_frontend_report.xml || true
+      docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py \
+        -t http://209.38.187.208 \
+        -r zap_gateway_report.html \
+        -x zap_gateway_report.xml || true
     
-    - cp /zap/wrk/*.html . || true
-    - cp /zap/wrk/*.json . || true
-    - cp /zap/wrk/*.xml . || true # On récupère les XML
+    # 2. SCAN DU FRONTEND (Interface Web)
+    - echo "🚀 Scan du Frontend Angular : http://209.38.187.16"
+    - |
+      docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py \
+        -t http://129.212.195.224 \
+        -r zap_frontend_report.html \
+        -x zap_frontend_report.xml || true
+
   artifacts:
     when: always
     paths:
-      - "*.html"
-      - "*.json"
-      - "*.xml"
+      - "zap_gateway_report.xml"
+      - "zap_frontend_report.xml"
+      - "zap_gateway_report.html"
+      - "zap_frontend_report.html"
     expire_in: 1 week
   allow_failure: true
  
