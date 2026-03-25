@@ -392,22 +392,11 @@ owasp-zap-dast:
     - mkdir -p /zap/wrk
     - chmod 777 /zap/wrk
   script:
-    # 1. SCAN DE L'API GATEWAY (Backend)
-    - echo "🚀 Scan de l'API Gateway : http://209.38.187.208"
-    - |
-      docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py \
-        -t http://209.38.187.208 \
-        -r zap_gateway_report.html \
-        -x zap_gateway_report.xml || true
-    
-    # 2. SCAN DU FRONTEND (Interface Web)
-    - echo "🚀 Scan du Frontend Angular : http://209.38.187.16"
-    - |
-      docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py \
-        -t http://129.212.195.224 \
-        -r zap_frontend_report.html \
-        -x zap_frontend_report.xml || true
-
+    - echo "🚀 Démarrage des scans DAST sur le Cloud DigitalOcean..."
+    - echo "1. Scan de l'API Gateway"
+    - docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py -t http://209.38.187.208 -r zap_gateway_report.html -x zap_gateway_report.xml || true
+    - echo "2. Scan du Frontend Angular"
+    - docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py -t http://209.38.187.16 -r zap_frontend_report.html -x zap_frontend_report.xml || true
   artifacts:
     when: always
     paths:
