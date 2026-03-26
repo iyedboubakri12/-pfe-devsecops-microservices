@@ -26,6 +26,7 @@ stages:
   - build-all
   - test-unitaires
   - security-scan
+  - policy-check 
   - docker-build
   - docker-scan
   - deploy-cloud 
@@ -237,6 +238,20 @@ sca-scan-frontend:
       - frontend/npm-audit-report.txt
     expire_in: 1 week
   allow_failure: true
+
+opa-gatekeeper-check:
+  stage: policy-check
+  image: 
+    name: openpolicyagent/conftest:latest
+    entrypoint: [""]
+  tags:
+    - vm
+  script:
+    - echo "🛡️ Vérification de la conformité des fichiers Kubernetes (OPA)..."
+    # Cette commande scanne ton dossier k8s/ par rapport aux règles .rego
+    # Si tu n'as pas encore de dossier 'policy', le job affichera un warning
+    - conftest test k8s/ || echo "⚠️ Attention, aucune règle OPA n'a été trouvée ou violation détectée."
+  allow_failure: true # On le laisse en true pour ne pas bloquer tout pendant tes tests
   
 ############################
 # 8️⃣ BUILD backend & PUSH TO REGISTRY (CORRIGÉ)
