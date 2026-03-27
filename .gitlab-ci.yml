@@ -385,12 +385,34 @@ secret-detection:
 deploy-to-digitalocean:
   stage: deploy-cloud
   tags:
-    - vm # Utilise ton runner shell qui a accès à kubectl
+    - vm # Ton runner qui a accès à kubectl et helm
   script:
-    - echo "🚀 Déploiement sur le Cloud DigitalOcean..."
-    # On s'assure que kubectl pointe vers le bon cluster
+    - echo "🚀 Déploiement de l'infrastructure et de la sécurité..."
+    
+    # 1. Appliquer les manifests applicatifs
     - kubectl apply -f k8s/
-    # On force le redémarrage pour prendre les dernières images du registry
+    
+    # 2. Vérifier/Mettre à jour Falco (Runtime Security)
+    - |
+      if ! helm status falco -n falco >/dev/null 2>&1; then
+        echo "Installing Falco..."
+        helm install falco falcosecurity/falco -n falco --create-namespace --set falcosidekick.enabled=true
+      else
+        echo "Falco is already running."
+      fi
+
+    # 3. Vérifier/Mettre à jour le Monitoring (Prometheus/Grafana)
+    - |
+      if ! helm status monitoring -n default >/dev/null 2>&1; then
+        echo "Installing Monitoring Stack..."
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+        helm repo update
+        helm install monitoring prometheus-community/kube-prometheus-stack
+      else
+        echo "Monitoring is already running."
+      fi
+
+    # 4. Redémarrage des services pour prendre les nouvelles images
     - kubectl rollout restart deployment/api-gateway-service
     - kubectl rollout restart deployment/user-service
     - kubectl rollout restart deployment/course-service
