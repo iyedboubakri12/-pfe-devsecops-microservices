@@ -250,7 +250,7 @@ opa-gatekeeper-check:
     - echo "🛡️ Vérification de la conformité des fichiers Kubernetes (OPA)..."
     # Cette commande scanne ton dossier k8s/ par rapport aux règles .rego
     # Si tu n'as pas encore de dossier 'policy', le job affichera un warning
-    - conftest test k8s/ || echo "⚠️ Attention, aucune règle OPA n'a été trouvée ou violation détectée."
+    - conftest test k8s/*.yaml -p k8s/kubernetes.rego
   allow_failure: true # On le laisse en true pour ne pas bloquer tout pendant tes tests
   
 ############################
