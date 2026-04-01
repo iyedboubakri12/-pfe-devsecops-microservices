@@ -247,10 +247,13 @@ opa-gatekeeper-check:
   tags:
     - vm
   script:
-    - echo "🛡️ Vérification de la conformité des fichiers Kubernetes (OPA)..."
-    # Cette commande scanne ton dossier k8s/ par rapport aux règles .rego
-    # Si tu n'as pas encore de dossier 'policy', le job affichera un warning
-    - conftest test k8s/*.yaml -p k8s/kubernetes.rego
+    - echo "🛡️ Vérification OPA..."
+    # On génère un rapport au format JSON pour DefectDojo
+    - conftest test k8s/*.yaml -p k8s/kubernetes.rego --output json > opa-report.json || true
+  artifacts:
+    when: always
+    paths:
+      - opa-report.json
   allow_failure: true # On le laisse en true pour ne pas bloquer tout pendant tes tests
   
 ############################
@@ -393,12 +396,23 @@ deploy-to-digitalocean:
     - kubectl apply -f k8s/
     
     # 2. Vérifier/Mettre à jour Falco (Runtime Security)
+    # 2. Vérifier/Mettre à jour Falco avec lien DefectDojo -> JIRA
     - |
       if ! helm status falco -n falco >/dev/null 2>&1; then
-        echo "Installing Falco..."
-        helm install falco falcosecurity/falco -n falco --create-namespace --set falcosidekick.enabled=true
+        echo "🚀 Installation de Falco avec lien JIRA..."
+        helm install falco falcosecurity/falco -n falco --create-namespace \
+          --set falcosidekick.enabled=true \
+          --set falcosidekick.webui.enabled=true \
+          --set falcosidekick.config.defectdojo.url="${DEFECTDOJO_URL}" \
+          --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
+          --set falcosidekick.config.defectdojo.productid="1" \
+          --set falcosidekick.config.defectdojo.minimumpriority="warning"
       else
-        echo "Falco is already running."
+        echo "Falco est déjà en cours d'exécution. Mise à jour des règles..."
+        helm upgrade falco falcosecurity/falco -n falco --reuse-values \
+          --set falcosidekick.config.defectdojo.url="${DEFECTDOJO_URL}" \
+          --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
+          --set falcosidekick.config.defectdojo.productid="1"
       fi
 
     # 3. Vérifier/Mettre à jour le Monitoring (Prometheus/Grafana)
@@ -529,3 +543,19 @@ upload-sonarqube:
           -F "service=$service" \
           -F "active=true" -F "verified=true" -F "push_to_jira=true"
       done
+upload-opa-to-jira:
+  <<: *upload_template
+  needs: ["opa-gatekeeper-check"]
+  script:
+    - |
+      if [ -f "opa-report.json" ]; then
+        echo "📤 Envoi des violations OPA vers JIRA..."
+        curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+          -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+          -F "active=true" -F "verified=true" -F "push_to_jira=true" \
+          -F "scan_type=Conftest Scan" \
+          -F "product_name=DevsecopsApp" \
+          -F "engagement_name=Pipeline-Full-Scan" \
+          -F "file=@opa-report.json"
+      fi    
+    
