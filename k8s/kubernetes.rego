@@ -1,7 +1,7 @@
 package main
 
 # 1. Règle : Interdire les containers sans limites de RAM/CPU
-deny[msg] {
+deny contains msg if {
   input.kind == "Deployment"
   container := input.spec.template.spec.containers[_]
   not container.resources.limits
@@ -9,7 +9,7 @@ deny[msg] {
 }
 
 # 2. Règle : Interdire de tourner en ROOT
-deny[msg] {
+deny contains msg if {
   input.kind == "Deployment"
   container := input.spec.template.spec.containers[_]
   not container.securityContext.runAsNonRoot == true
@@ -17,7 +17,7 @@ deny[msg] {
 }
 
 # 3. Règle : Interdire le mode PRIVILÉGIÉ
-deny[msg] {
+deny contains msg if {
   input.kind == "Deployment"
   container := input.spec.template.spec.containers[_]
   container.securityContext.privileged == true
