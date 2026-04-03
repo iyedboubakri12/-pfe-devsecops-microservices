@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: microservices-monitor
+  namespace: monitoring
+  labels:
+    release: monitoring # Doit correspondre au nom de ton installation Helm
+spec:
+  # Dit à Prometheus de chercher dans tous les namespaces
+  namespaceSelector:
+    any: true
+  # Sélectionne tes services par leurs labels
+  selector:
+    matchExpressions:
+      - {key: app, operator: In, values: [user-service, course-service, answer-service, exam-service]}
+  endpoints:
+  # 1. Configuration pour USER-SERVICE
+  - port: http-web
+    path: /students/actuator/prometheus
+    interval: 15s
+  # 2. Configuration pour COURSE-SERVICE
+  - port: http-web
+    path: /courses/actuator/prometheus
+    interval: 15s
+  # 3. Configuration pour ANSWER-SERVICE
+  - port: http-web
+    path: /answers/actuator/prometheus
+    interval: 15s
+  # 4. Configuration pour EXAM-SERVICE
+  - port: http-web
+    path: /exams/actuator/prometheus
+    interval: 15s
