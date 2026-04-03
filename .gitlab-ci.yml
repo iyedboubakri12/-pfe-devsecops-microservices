@@ -107,7 +107,7 @@ backend-tests:
     paths:
       - backend/**/target/classes
       - backend/**/target/site/jacoco/jacoco.xml
-    expire_in: 1 hour
+    expire_in: 2 hour
   
 
 ############################
@@ -126,7 +126,7 @@ frontend-tests:
     when: always
     paths:
       - frontend/coverage/lcov.info
-    expire_in: 1 hour
+    expire_in: 2 hour
   allow_failure: true
   
 
