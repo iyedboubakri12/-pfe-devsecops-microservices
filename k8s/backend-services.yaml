@@ -23,30 +23,31 @@ spec:
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
-        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
           value: "/students/actuator"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:postgresql://postgres:5432/microservices_db
         - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
           value: http://eureka-service:8761/eureka/
-        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
-          value: update
         resources:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   name: user-service
+  labels:            # <--- AJOUT CRUCIAL POUR PROMETHEUS
+    app: backend-pfe
+    service-name: user
 spec:
   selector:
     app: user-service
   ports:
-    - port: 8081
+    - name: http-web # <--- NOM DU PORT OBLIGATOIRE
+      port: 8081
+      targetPort: 8081
 ---
-
 
 # 2. COURSE-SERVICE
 apiVersion: apps/v1
@@ -73,7 +74,7 @@ spec:
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
-        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
           value: "/courses/actuator"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:mysql://mysql:3306/microservices_db
@@ -87,18 +88,21 @@ spec:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   name: course-service
+  labels:            # <--- AJOUT CRUCIAL
+    app: backend-pfe
+    service-name: course
 spec:
   selector:
     app: course-service
   ports:
-    - port: 8082
+    - name: http-web
+      port: 8082
+      targetPort: 8082
 ---
-
 
 # 3. ANSWER-SERVICE
 apiVersion: apps/v1
@@ -125,7 +129,7 @@ spec:
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
-        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
           value: "/answers/actuator"
         - name: SPRING_DATA_MONGODB_URI
           value: mongodb://mongodb:27017/microservices_answers_db
@@ -135,18 +139,21 @@ spec:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   name: answer-service
+  labels:            # <--- AJOUT CRUCIAL
+    app: backend-pfe
+    service-name: answer
 spec:
   selector:
     app: answer-service
   ports:
-    - port: 8083
+    - name: http-web
+      port: 8083
+      targetPort: 8083
 ---
-
 
 # 4. EXAM-SERVICE
 apiVersion: apps/v1
@@ -173,7 +180,7 @@ spec:
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
-        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
           value: "/exams/actuator"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:mysql://mysql:3306/microservices_db
@@ -187,13 +194,17 @@ spec:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
   name: exam-service
+  labels:            # <--- AJOUT CRUCIAL
+    app: backend-pfe
+    service-name: exam
 spec:
   selector:
     app: exam-service
   ports:
-    - port: 8084
+    - name: http-web
+      port: 8084
+      targetPort: 8084
