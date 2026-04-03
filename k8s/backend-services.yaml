@@ -41,7 +41,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: user-service
-  labels: { app: backend-pfe }
+  labels: { app: user-service }
 spec:
   selector: { app: user-service }
   ports: [{ name: http-web, port: 8081, targetPort: 8081 }]
@@ -87,7 +87,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: course-service
-  labels: { app: backend-pfe }
+  labels: { app: course-service }
 spec:
   selector: { app: course-service }
   ports: [{ name: http-web, port: 8082, targetPort: 8082 }]
@@ -129,7 +129,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: answer-service
-  labels: { app: backend-pfe }
+  labels: { app: answer-service }
 spec:
   selector: { app: answer-service }
   ports: [{ name: http-web, port: 8083, targetPort: 8083 }]
@@ -175,7 +175,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: exam-service
-  labels: { app: backend-pfe }
+  labels: { app: exam-service }
 spec:
   selector: { app: exam-service }
   ports: [{ name: http-web, port: 8084, targetPort: 8084 }]
