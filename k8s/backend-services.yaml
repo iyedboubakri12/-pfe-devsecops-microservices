@@ -13,14 +13,15 @@ spec:
       labels:
         app: user-service
     spec:
-      securityContext:      # <--- AJOUT POUR OPA
-        runAsNonRoot: true  # <--- OBLIGATOIRE
-        runAsUser: 1000     # <--- UTILISATEUR NON-ROOT
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
       - name: user-service
         image: registry.gitlab.com/devsecopsi-group/devsecops-project/user-service:latest
+        securityContext:      # <--- IL FAUT LE METTRE ICI (DANS LE CONTAINER)
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false # Optionnel mais recommandé
         ports:
         - containerPort: 8081
         env:
@@ -40,15 +41,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: user-service
-  labels:
-    app: backend-pfe
+  labels: { app: backend-pfe }
 spec:
-  selector:
-    app: user-service
-  ports:
-    - name: http-web
-      port: 8081
-      targetPort: 8081
+  selector: { app: user-service }
+  ports: [{ name: http-web, port: 8081, targetPort: 8081 }]
 ---
 
 # 2. COURSE-SERVICE
@@ -58,24 +54,18 @@ metadata:
   name: course-service
 spec:
   replicas: 1
-  selector:
-    matchLabels:
-      app: course-service
+  selector: { matchLabels: { app: course-service } }
   template:
-    metadata:
-      labels:
-        app: course-service
+    metadata: { labels: { app: course-service } }
     spec:
-      securityContext:      # <--- AJOUT POUR OPA
-        runAsNonRoot: true
-        runAsUser: 1000
-      imagePullSecrets:
-        - name: gitlab-registry-secret
+      imagePullSecrets: [{ name: gitlab-registry-secret }]
       containers:
       - name: course-service
         image: registry.gitlab.com/devsecopsi-group/devsecops-project/course-service:latest
-        ports:
-        - containerPort: 8082
+        securityContext:      # <--- DANS LE CONTAINER
+          runAsNonRoot: true
+          runAsUser: 1000
+        ports: [{ containerPort: 8082 }]
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
@@ -97,15 +87,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: course-service
-  labels:
-    app: backend-pfe
+  labels: { app: backend-pfe }
 spec:
-  selector:
-    app: course-service
-  ports:
-    - name: http-web
-      port: 8082
-      targetPort: 8082
+  selector: { app: course-service }
+  ports: [{ name: http-web, port: 8082, targetPort: 8082 }]
 ---
 
 # 3. ANSWER-SERVICE
@@ -115,24 +100,18 @@ metadata:
   name: answer-service
 spec:
   replicas: 1
-  selector:
-    matchLabels:
-      app: answer-service
+  selector: { matchLabels: { app: answer-service } }
   template:
-    metadata:
-      labels:
-        app: answer-service
+    metadata: { labels: { app: answer-service } }
     spec:
-      securityContext:      # <--- AJOUT POUR OPA
-        runAsNonRoot: true
-        runAsUser: 1000
-      imagePullSecrets:
-        - name: gitlab-registry-secret
+      imagePullSecrets: [{ name: gitlab-registry-secret }]
       containers:
       - name: answer-service
         image: registry.gitlab.com/devsecopsi-group/devsecops-project/answer-service:latest
-        ports:
-        - containerPort: 8083
+        securityContext:      # <--- DANS LE CONTAINER
+          runAsNonRoot: true
+          runAsUser: 1000
+        ports: [{ containerPort: 8083 }]
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
@@ -150,15 +129,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: answer-service
-  labels:
-    app: backend-pfe
+  labels: { app: backend-pfe }
 spec:
-  selector:
-    app: answer-service
-  ports:
-    - name: http-web
-      port: 8083
-      targetPort: 8083
+  selector: { app: answer-service }
+  ports: [{ name: http-web, port: 8083, targetPort: 8083 }]
 ---
 
 # 4. EXAM-SERVICE
@@ -168,24 +142,18 @@ metadata:
   name: exam-service
 spec:
   replicas: 1
-  selector:
-    matchLabels:
-      app: exam-service
+  selector: { matchLabels: { app: exam-service } }
   template:
-    metadata:
-      labels:
-        app: exam-service
+    metadata: { labels: { app: exam-service } }
     spec:
-      securityContext:      # <--- AJOUT POUR OPA
-        runAsNonRoot: true
-        runAsUser: 1000
-      imagePullSecrets:
-        - name: gitlab-registry-secret
+      imagePullSecrets: [{ name: gitlab-registry-secret }]
       containers:
       - name: exam-service
         image: registry.gitlab.com/devsecopsi-group/devsecops-project/exam-service:latest
-        ports:
-        - containerPort: 8084
+        securityContext:      # <--- DANS LE CONTAINER
+          runAsNonRoot: true
+          runAsUser: 1000
+        ports: [{ containerPort: 8084 }]
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
@@ -207,12 +175,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: exam-service
-  labels:
-    app: backend-pfe
+  labels: { app: backend-pfe }
 spec:
-  selector:
-    app: exam-service
-  ports:
-    - name: http-web
-      port: 8084
-      targetPort: 8084
+  selector: { app: exam-service }
+  ports: [{ name: http-web, port: 8084, targetPort: 8084 }]
