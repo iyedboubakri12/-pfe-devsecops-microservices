@@ -13,6 +13,9 @@ spec:
       labels:
         app: user-service
     spec:
+      securityContext:      # <--- AJOUT POUR OPA
+        runAsNonRoot: true  # <--- OBLIGATOIRE
+        runAsUser: 1000     # <--- UTILISATEUR NON-ROOT
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
@@ -37,14 +40,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: user-service
-  labels:            # <--- AJOUT CRUCIAL POUR PROMETHEUS
+  labels:
     app: backend-pfe
-    service-name: user
 spec:
   selector:
     app: user-service
   ports:
-    - name: http-web # <--- NOM DU PORT OBLIGATOIRE
+    - name: http-web
       port: 8081
       targetPort: 8081
 ---
@@ -64,6 +66,9 @@ spec:
       labels:
         app: course-service
     spec:
+      securityContext:      # <--- AJOUT POUR OPA
+        runAsNonRoot: true
+        runAsUser: 1000
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
@@ -92,9 +97,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: course-service
-  labels:            # <--- AJOUT CRUCIAL
+  labels:
     app: backend-pfe
-    service-name: course
 spec:
   selector:
     app: course-service
@@ -119,6 +123,9 @@ spec:
       labels:
         app: answer-service
     spec:
+      securityContext:      # <--- AJOUT POUR OPA
+        runAsNonRoot: true
+        runAsUser: 1000
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
@@ -143,9 +150,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: answer-service
-  labels:            # <--- AJOUT CRUCIAL
+  labels:
     app: backend-pfe
-    service-name: answer
 spec:
   selector:
     app: answer-service
@@ -170,6 +176,9 @@ spec:
       labels:
         app: exam-service
     spec:
+      securityContext:      # <--- AJOUT POUR OPA
+        runAsNonRoot: true
+        runAsUser: 1000
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
@@ -198,9 +207,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: exam-service
-  labels:            # <--- AJOUT CRUCIAL
+  labels:
     app: backend-pfe
-    service-name: exam
 spec:
   selector:
     app: exam-service
