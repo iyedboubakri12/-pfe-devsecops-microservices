@@ -7,3 +7,7 @@ spec:
     kinds:
       - apiGroups: ["apps"]
         kinds: ["Deployment"]
+    excludedNamespaces:
+      - "monitoring"
+      - "gatekeeper-system"
+      - "kube-system"
