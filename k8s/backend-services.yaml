@@ -13,9 +13,6 @@ spec:
       labels:
         app: user-service
     spec:
-      securityContext: # FIX OPA: Empêche le blocage par Gatekeeper
-        runAsNonRoot: true
-        runAsUser: 1000
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
@@ -26,7 +23,7 @@ spec:
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
-        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
           value: "/students/actuator"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:postgresql://postgres:5432/microservices_db
@@ -34,10 +31,11 @@ spec:
           value: http://eureka-service:8761/eureka/
         - name: SPRING_JPA_HIBERNATE_DDL_AUTO
           value: update
-        resources: # Déjà conforme OPA
+        resources:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -46,10 +44,9 @@ spec:
   selector:
     app: user-service
   ports:
-    - name: http-web # FIX PROMETHEUS: Nom obligatoire pour le ServiceMonitor
-      port: 8081
-      targetPort: 8081
+    - port: 8081
 ---
+
 
 # 2. COURSE-SERVICE
 apiVersion: apps/v1
@@ -66,9 +63,6 @@ spec:
       labels:
         app: course-service
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
@@ -79,7 +73,7 @@ spec:
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
-        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
           value: "/courses/actuator"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:mysql://mysql:3306/microservices_db
@@ -93,6 +87,7 @@ spec:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -101,10 +96,9 @@ spec:
   selector:
     app: course-service
   ports:
-    - name: http-web # FIX PROMETHEUS
-      port: 8082
-      targetPort: 8082
+    - port: 8082
 ---
+
 
 # 3. ANSWER-SERVICE
 apiVersion: apps/v1
@@ -121,9 +115,6 @@ spec:
       labels:
         app: answer-service
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
@@ -134,7 +125,7 @@ spec:
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
-        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
           value: "/answers/actuator"
         - name: SPRING_DATA_MONGODB_URI
           value: mongodb://mongodb:27017/microservices_answers_db
@@ -144,6 +135,7 @@ spec:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -152,10 +144,9 @@ spec:
   selector:
     app: answer-service
   ports:
-    - name: http-web # FIX PROMETHEUS
-      port: 8083
-      targetPort: 8083
+    - port: 8083
 ---
+
 
 # 4. EXAM-SERVICE
 apiVersion: apps/v1
@@ -172,9 +163,6 @@ spec:
       labels:
         app: exam-service
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
@@ -185,7 +173,7 @@ spec:
         env:
         - name: EUREKA_INSTANCE_PREFER_IP_ADDRESS
           value: "true"
-        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH
+        - name: MANAGEMENT_ENDPOINTS_WEB_BASE_PATH # FIX PROMETHEUS 404
           value: "/exams/actuator"
         - name: SPRING_DATASOURCE_URL
           value: jdbc:mysql://mysql:3306/microservices_db
@@ -199,6 +187,7 @@ spec:
           limits: { memory: "512Mi" }
           requests: { memory: "256Mi" }
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -207,6 +196,4 @@ spec:
   selector:
     app: exam-service
   ports:
-    - name: http-web # FIX PROMETHEUS
-      port: 8084
-      targetPort: 8084
+    - port: 8084
