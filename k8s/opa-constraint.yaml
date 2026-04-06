@@ -11,3 +11,5 @@ spec:
       - "monitoring"
       - "gatekeeper-system"
       - "kube-system"
+      - "falco"
+      - "logging"
