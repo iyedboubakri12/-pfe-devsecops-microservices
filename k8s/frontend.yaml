@@ -19,6 +19,9 @@ spec:
         image: registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest
         ports:
         - containerPort: 80
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 101 # UID standard pour nginx sur alpine
         resources:
           limits:
             memory: "256Mi"
