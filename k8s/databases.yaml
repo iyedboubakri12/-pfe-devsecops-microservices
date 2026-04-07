@@ -26,23 +26,34 @@ spec:
   template:
     metadata: { labels: { app: postgres } }
     spec:
+      securityContext:
+        fsGroup: 999 # Propriété du volume pour l'utilisateur postgres
+      imagePullSecrets:
+        - name: gitlab-registry-secret
       containers:
       - name: postgres
         image: postgres:15
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+        resources: # --- AJOUT POUR OPA ---
+          limits:
+            memory: "512Mi"
+          requests:
+            memory: "256Mi"
         env:
         - name: POSTGRES_DB
           value: microservices_db
         - name: POSTGRES_PASSWORD
           value: postgres
-        - name: PGDATA # On ajoute cette variable
+        - name: PGDATA
           value: /var/lib/postgresql/data/pgdata
         volumeMounts:
         - name: postgre-storage
           mountPath: /var/lib/postgresql/data
-          subPath: postgres-data # C'est CA qui règle le problème !
+          subPath: postgres-data
       volumes:
       - name: postgre-storage
-        persistentVolumeClaim: { claimName: postgres-pvc }
         persistentVolumeClaim: { claimName: postgres-pvc }
 ---
 # 4. Déploiement MySQL
@@ -55,9 +66,21 @@ spec:
   template:
     metadata: { labels: { app: mysql } }
     spec:
+      securityContext:
+        fsGroup: 999
+      imagePullSecrets:
+        - name: gitlab-registry-secret
       containers:
       - name: mysql
         image: mysql:8
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+        resources: # --- AJOUT POUR OPA ---
+          limits:
+            memory: "512Mi"
+          requests:
+            memory: "256Mi"
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: root
@@ -66,6 +89,7 @@ spec:
         volumeMounts:
         - name: mysql-storage
           mountPath: /var/lib/mysql
+          subPath: mysql-data # --- AJOUTÉ pour éviter l'erreur lost+found ---
       volumes:
       - name: mysql-storage
         persistentVolumeClaim: { claimName: mysql-pvc }
