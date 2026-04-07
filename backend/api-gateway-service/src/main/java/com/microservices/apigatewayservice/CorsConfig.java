@@ -17,7 +17,7 @@ public class CorsConfig {
         // ⚠️ Ne pas utiliser "*" si allowCredentials est true
         config.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:4200",        // pour dev local
-            "http://144.126.245.171",        // frontend IP actuelle
+            "http://157.230.77.38",        // frontend IP actuelle
             "https://devsecops-project.com" // futur domaine prod
         )); 
 
