@@ -16,6 +16,11 @@ export class ExamService extends CommonService<Exam> {
     super(http);
   }
 
+  // --- MÉTHODE AJOUTÉE POUR CORRIGER L'ERREUR ---
+  public getAllPagesWithText(page: string, size: string, text: string): Observable<any> {
+    return this.http.get<any>(`${this.baseEnpoint}/page/${page}/${size}/${text}`);
+  }
+
   public getAlllSubjects(): Observable<Subject[]>{
     return this.http.get<Subject[]>(`${this.baseEnpoint}/subjects`);
   }

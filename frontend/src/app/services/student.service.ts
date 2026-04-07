@@ -16,6 +16,11 @@ export class StudentService extends CommonService<Student> {
     super(http);
   }
 
+  // --- MÉTHODE AJOUTÉE POUR CORRIGER L'ERREUR ---
+  public getAllPagesWithText(page: string, size: string, text: string): Observable<any> {
+    return this.http.get<any>(`${this.baseEnpoint}/page/${page}/${size}/${text}`);
+  }
+
   public createWithImage(student: Student, file: File): Observable<Student> {
     const formData = this.buildFormData(student, file);
     return this.http.post<Student>(this.baseEnpoint + "/create-with-image", formData);
