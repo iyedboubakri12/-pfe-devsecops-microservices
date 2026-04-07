@@ -22,6 +22,14 @@ spec:
           image: registry.gitlab.com/devsecopsi-group/devsecops-project/eureka-service:latest
           ports:
             - containerPort: 8761
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+          resources:
+            limits:
+              memory: "512Mi"
+            requests:
+              memory: "256Mi"
           env:
             - name: SERVER_PORT
               value: "8761"
@@ -67,6 +75,14 @@ spec:
           image: registry.gitlab.com/devsecopsi-group/devsecops-project/api-gateway-service:latest
           ports:
             - containerPort: 8090
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+          resources:
+            limits:
+              memory: "512Mi"
+            requests:
+              memory: "256Mi"
           env:
             - name: SERVER_PORT
               value: "8090"
