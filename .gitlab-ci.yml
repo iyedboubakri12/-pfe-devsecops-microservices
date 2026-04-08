@@ -387,52 +387,39 @@ secret-detection:
   
 deploy-to-digitalocean:
   stage: deploy-cloud
+  image: dtzar/helm-kubectl:latest # IMAGE CRUCIALE contenant kubectl et helm
   tags:
-    - vm # Ton runner qui a accès à kubectl et helm
+    - vm 
   script:
-    - echo "🚀 Déploiement de l'infrastructure et de la sécurité..."
+    - echo "🚀 Déploiement de l'infrastructure sur DigitalOcean..."
     
-    # 1. Appliquer les manifests applicatifs
+    # Configuration du certificat (si nécessaire) ou utilisation du KUBECONFIG déjà présent sur le runner
     - kubectl apply -f k8s/
     
-    # 2. Vérifier/Mettre à jour Falco (Runtime Security)
-    # 2. Vérifier/Mettre à jour Falco avec lien DefectDojo -> JIRA
+    # Installation/Update de Falco avec lien JIRA (via DefectDojo)
+    - echo "🕵️ Mise à jour de Falco (Runtime Security)..."
+    - helm repo add falcosecurity https://falcosecurity.github.io/charts
+    - helm repo update
     - |
-      if ! helm status falco -n falco >/dev/null 2>&1; then
-        echo "🚀 Installation de Falco avec lien JIRA..."
-        helm install falco falcosecurity/falco -n falco --create-namespace \
-          --set falcosidekick.enabled=true \
-          --set falcosidekick.webui.enabled=true \
-          --set falcosidekick.config.defectdojo.url="${DEFECTDOJO_URL}" \
-          --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
-          --set falcosidekick.config.defectdojo.productid="1" \
-          --set falcosidekick.config.defectdojo.minimumpriority="warning"
-      else
-        echo "Falco est déjà en cours d'exécution. Mise à jour des règles..."
-        helm upgrade falco falcosecurity/falco -n falco --reuse-values \
-          --set falcosidekick.config.defectdojo.url="${DEFECTDOJO_URL}" \
-          --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
-          --set falcosidekick.config.defectdojo.productid="1"
-      fi
+      helm upgrade --install falco falcosecurity/falco -n falco --create-namespace \
+        --set falcosidekick.enabled=true \
+        --set falcosidekick.webui.enabled=true \
+        --set falcosidekick.config.defectdojo.url="${DEFECTDOJO_URL}" \
+        --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
+        --set falcosidekick.config.defectdojo.productid="1" \
+        --set falcosidekick.config.defectdojo.minimumpriority="warning"
 
-    # 3. Vérifier/Mettre à jour le Monitoring (Prometheus/Grafana)
+    # Installation/Update du Monitoring (Prometheus/Grafana)
+    - echo "📈 Mise à jour du Monitoring..."
+    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    - helm repo update
     - |
-      if ! helm status monitoring -n default >/dev/null 2>&1; then
-        echo "Installing Monitoring Stack..."
-        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-        helm repo update
-        helm install monitoring prometheus-community/kube-prometheus-stack
-      else
-        echo "Monitoring is already running."
-      fi
+      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack -n monitoring --create-namespace \
+        --set prometheus.prometheusSpec.resources.limits.memory=1024Mi \
+        --set grafana.resources.limits.memory=512Mi
 
-    # 4. Redémarrage des services pour prendre les nouvelles images
-    - kubectl rollout restart deployment/api-gateway-service
-    - kubectl rollout restart deployment/user-service
-    - kubectl rollout restart deployment/course-service
-    - kubectl rollout restart deployment/exam-service
-    - kubectl rollout restart deployment/answer-service
-    - kubectl rollout restart deployment/frontend
+    # Force le redémarrage pour les nouvelles images
+    - kubectl rollout restart deployment --all
   only:
     - main
 owasp-zap-dast:
