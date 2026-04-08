@@ -387,13 +387,16 @@ secret-detection:
   
 deploy-to-digitalocean:
   stage: deploy-cloud
-  image: dtzar/helm-kubectl:latest # IMAGE CRUCIALE contenant kubectl et helm
   tags:
-    - vm 
+     - vm
+  image: dtzar/helm-kubectl:latest
+  variables:
+    # GitLab va créer automatiquement un fichier temporaire
+    # et mettre son chemin dans la variable $KUBECONFIG
+    KUBECONFIG: $KUBECONFIG 
   script:
-    - echo "🚀 Déploiement de l'infrastructure sur DigitalOcean..."
-    
-    # Configuration du certificat (si nécessaire) ou utilisation du KUBECONFIG déjà présent sur le runner
+    - echo "🚀 Déploiement via le fichier KUBECONFIG de type File..."
+    - kubectl get nodes  # Test de connexion
     - kubectl apply -f k8s/
     
     # Installation/Update de Falco avec lien JIRA (via DefectDojo)
