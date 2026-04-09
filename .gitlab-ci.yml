@@ -420,7 +420,7 @@ deploy-to-digitalocean:
         --set grafana.resources.limits.memory=512Mi
 
     # Force le redémarrage pour les nouvelles images
-    - kubectl rollout restart deployment --all
+    - kubectl rollout restart deployment
   only:
     - main
 owasp-zap-dast:
