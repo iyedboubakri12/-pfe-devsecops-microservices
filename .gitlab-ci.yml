@@ -391,14 +391,12 @@ deploy-to-digitalocean:
      - vm
   image: dtzar/helm-kubectl:latest
   variables:
-    # GitLab va créer automatiquement un fichier temporaire
-    # et mettre son chemin dans la variable $KUBECONFIG
-    KUBECONFIG: $KUBECONFIG 
+    # On dit à kubectl d'utiliser le chemin du fichier stocké dans KUBECONFIG_CONTENT
+    KUBECONFIG: $KUBECONFIG_CONTENT 
   script:
-    - echo "🚀 Déploiement via le fichier KUBECONFIG de type File..."
-    - kubectl get nodes  # Test de connexion
+    - echo "🚀 Déploiement via le fichier KUBECONFIG..."
+    - kubectl get nodes  # Maintenant, cela devrait fonctionner
     - kubectl apply -f k8s/
-    
     # Installation/Update de Falco avec lien JIRA (via DefectDojo)
     - echo "🕵️ Mise à jour de Falco (Runtime Security)..."
     - helm repo add falcosecurity https://falcosecurity.github.io/charts
@@ -435,9 +433,9 @@ owasp-zap-dast:
   script:
     - echo "🚀 Démarrage des scans DAST sur le Cloud DigitalOcean..."
     - echo "1. Scan de l'API Gateway"
-    - docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py -t http://209.38.187.208 -r zap_gateway_report.html -x zap_gateway_report.xml || true
+    - docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py -t http://157.245.22.96 -r zap_gateway_report.html -x zap_gateway_report.xml || true
     - echo "2. Scan du Frontend Angular"
-    - docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py -t http://209.38.187.16 -r zap_frontend_report.html -x zap_frontend_report.xml || true
+    - docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py -t http://157.230.77.38 -r zap_frontend_report.html -x zap_frontend_report.xml || true
   artifacts:
     when: always
     paths:
