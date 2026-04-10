@@ -315,7 +315,7 @@ container_scan:
   tags:
      - vm
   image:
-    name: aquasec/trivy:latest
+    name: aquasec/trivy:0.49.1 
     entrypoint: [""]
   needs:
     - docker-build-backend
@@ -425,17 +425,28 @@ deploy-to-digitalocean:
     - main
 owasp-zap-dast:
   stage: dast-scan
+  image: 
+    name: zaproxy/zap-stable
+    entrypoint: [""] # Obligatoire pour outrepasser l'entrypoint par défaut de ZAP
   tags:
      - vm
   before_script:
     - mkdir -p /zap/wrk
-    - chmod 777 /zap/wrk
   script:
     - echo "🚀 Démarrage des scans DAST sur le Cloud DigitalOcean..."
+    
     - echo "1. Scan de l'API Gateway"
-    - docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py -t http://157.245.22.96 -r zap_gateway_report.html -x zap_gateway_report.xml || true
+    # Note : On n'utilise plus "docker run", on appelle directement le script
+    - zap-baseline.py -t http://157.245.22.96 -r zap_gateway_report.html -x zap_gateway_report.xml || true
+    
     - echo "2. Scan du Frontend Angular"
-    - docker run --rm -v $(pwd):/zap/wrk:rw zaproxy/zap-stable zap-baseline.py -t http://157.230.77.38 -r zap_frontend_report.html -x zap_frontend_report.xml || true
+    - zap-baseline.py -t http://157.230.77.38 -r zap_frontend_report.html -x zap_frontend_report.xml || true
+    
+    # TRÈS IMPORTANT : ZAP écrit les rapports dans /zap/wrk/
+    # On les copie dans le dossier courant pour que GitLab les trouve
+    - cp /zap/wrk/zap_gateway_report.* .
+    - cp /zap/wrk/zap_frontend_report.* .
+    
   artifacts:
     when: always
     paths:
