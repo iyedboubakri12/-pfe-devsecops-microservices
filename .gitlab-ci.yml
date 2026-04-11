@@ -313,10 +313,12 @@ qwiet-prezero-scan:
   tags:
     - vm
   dependencies:
-    - build-all-backend # Vérifiez que c'est bien le nom de votre job de build
+    - build-all-backend
   before_script:
-    - apt update && apt install -y curl jq
+    - apt update && apt install -y curl jq sed
     - curl https://cdn.shiftleft.io/download/sl > /usr/local/bin/sl && chmod a+rx /usr/local/bin/sl
+    # --- LA LIGNE MAGIQUE CI-DESSOUS ---
+    - sed -i 's/\r$//' sl-analysis.sh 
   script:
     - sh sl-analysis.sh
   rules:
