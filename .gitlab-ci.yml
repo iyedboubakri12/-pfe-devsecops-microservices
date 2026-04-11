@@ -29,6 +29,7 @@ stages:
   - policy-check 
   - docker-build
   - docker-scan
+  - test-security
   - deploy-cloud 
   - dast-scan
   - upload-defectdojo
