@@ -9,7 +9,7 @@ spec:
         kinds: ["Deployment"]
     excludedNamespaces:
       - "monitoring"
+      - "gatekeeper-system"
       - "kube-system"
       - "falco"
       - "logging"
-      - "default"
