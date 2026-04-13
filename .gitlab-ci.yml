@@ -7,6 +7,7 @@ variables:
   REGISTRY_URL: "registry.gitlab.com"
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
   DOCKER_DRIVER: overlay2
+  SLACK_WEBHOOK: "***REMOVED***"
 ############################
 # CACHE
 ############################
@@ -404,42 +405,25 @@ secret-detection:
   
 deploy-to-digitalocean:
   stage: deploy-cloud
-  tags:
-     - vm
+  tags: [vm]
   image: dtzar/helm-kubectl:latest
   variables:
-    # On dit à kubectl d'utiliser le chemin du fichier stocké dans KUBECONFIG_CONTENT
     KUBECONFIG: $KUBECONFIG_CONTENT 
   script:
-    - echo "🚀 Déploiement via le fichier KUBECONFIG..."
-    - kubectl get nodes  # Maintenant, cela devrait fonctionner
+    - kubectl get nodes
     - kubectl apply -f k8s/
-    # Installation/Update de Falco avec lien JIRA (via DefectDojo)
-    - echo "🕵️ Mise à jour de Falco (Runtime Security)..."
-    - helm repo add falcosecurity https://falcosecurity.github.io/charts
-    - helm repo update
+    - echo "🕵️ Activation de Falco avec Alerting Slack & DefectDojo..."
+    - helm repo add falcosecurity https://falcosecurity.github.io/charts && helm repo update
     - |
       helm upgrade --install falco falcosecurity/falco -n falco --create-namespace \
         --set falcosidekick.enabled=true \
-        --set falcosidekick.webui.enabled=true \
+        --set falcosidekick.config.slack.webhookurl="${SLACK_WEBHOOK}" \
+        --set falcosidekick.config.slack.minimumpriority="notice" \
         --set falcosidekick.config.defectdojo.url="${DEFECTDOJO_URL}" \
         --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
-        --set falcosidekick.config.defectdojo.productid="1" \
-        --set falcosidekick.config.defectdojo.minimumpriority="warning"
-
-    # Installation/Update du Monitoring (Prometheus/Grafana)
-    - echo "📈 Mise à jour du Monitoring..."
-    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    - helm repo update
-    - |
-      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack -n monitoring --create-namespace \
-        --set prometheus.prometheusSpec.resources.limits.memory=1024Mi \
-        --set grafana.resources.limits.memory=512Mi
-
-    # Force le redémarrage pour les nouvelles images
+        --set falcosidekick.config.defectdojo.productid="1"
     - kubectl rollout restart deployment
-  only:
-    - main
+  only: [main]
 owasp-zap-dast:
   stage: dast-scan
   image: 
