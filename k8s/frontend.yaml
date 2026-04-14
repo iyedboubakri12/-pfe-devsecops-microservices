@@ -12,6 +12,12 @@ spec:
       labels:
         app: frontend
     spec:
+      # --- SÉCURITÉ AU NIVEAU DU POD ---
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101 # UID standard pour les utilisateurs non-privilégiés (ex: nginx)
+        fsGroup: 101
+      # ---------------------------------
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
@@ -19,18 +25,29 @@ spec:
         image: registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest
         ports:
         - containerPort: 80
+        # --- SÉCURITÉ AU NIVEAU DU CONTENEUR ---
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          capabilities:
+            drop:
+              - ALL
+        # ---------------------------------------
         resources:
           limits:
             memory: "256Mi"
+            cpu: "500m" # Ajout d'une limite CPU pour être complet
           requests:
             memory: "128Mi"
+            cpu: "250m"
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
   name: frontend-service
 spec:
-  type: LoadBalancer # DigitalOcean va générer une IP publique réelle
+  type: LoadBalancer 
   selector:
     app: frontend
   ports:
