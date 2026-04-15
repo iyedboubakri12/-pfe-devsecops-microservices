@@ -428,14 +428,20 @@ deploy-to-digitalocean:
         --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
         --set falcosidekick.config.defectdojo.productid="1"
 
-    # Installation/Update du Monitoring (Prometheus/Grafana)
-    - echo "📈 Mise à jour du Monitoring..."
-    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    - helm repo update
+    # Installation/Update du Monitoring
+    - echo "📈 Mise à jour du Monitoring (avec nettoyage préventif)..."
+    # On supprime les anciens jobs qui pourraient bloquer
+    - kubectl delete job -n monitoring -l app.kubernetes.io/name=kube-prometheus-stack --ignore-not-found
+    
+    # On lance Helm avec un timeout plus long (10 minutes au lieu de 5)
     - |
-      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack -n monitoring --create-namespace \
+      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+        -n monitoring --create-namespace \
         --set prometheus.prometheusSpec.resources.limits.memory=1024Mi \
-        --set grafana.resources.limits.memory=512Mi
+        --set grafana.resources.limits.memory=512Mi \
+        --force \
+        --wait \
+        --timeout 10m
 
     # Force le redémarrage pour les nouvelles images
     - kubectl rollout restart deployment
