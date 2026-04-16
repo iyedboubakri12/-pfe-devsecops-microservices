@@ -409,13 +409,13 @@ deploy-to-digitalocean:
      - vm
   image: dtzar/helm-kubectl:latest
   variables:
-    # On dit à kubectl d'utiliser le chemin du fichier stocké dans KUBECONFIG_CONTENT
     KUBECONFIG: $KUBECONFIG_CONTENT 
   script:
     - echo "🚀 Déploiement via le fichier KUBECONFIG..."
-    - kubectl get nodes  # Maintenant, cela devrait fonctionner
+    - kubectl get nodes
     - kubectl apply -f k8s/
-    # Installation/Update de Falco avec lien JIRA (via DefectDojo)
+
+    # --- SECTION FALCO ---
     - echo "🕵️ Mise à jour de Falco (Runtime Security)..."
     - helm repo add falcosecurity https://falcosecurity.github.io/charts
     - helm repo update
@@ -428,23 +428,43 @@ deploy-to-digitalocean:
         --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
         --set falcosidekick.config.defectdojo.productid="1"
 
-    # 📈 Mise à jour du Monitoring
-    - echo "📈 Ajout du dépôt et nettoyage préventif..."
+    # --- SECTION MONITORING (AVEC AUTO-REPARATION) ---
+    - echo "📈 Préparation du Monitoring..."
     - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     - helm repo update
     
-    # On nettoie les anciens jobs qui pourraient bloquer l'installation
+    - |
+      echo "🔍 Vérification des verrous Helm pour la release 'monitoring'..."
+      # On installe jq temporairement pour lire le statut Helm
+      apk add --no-cache jq 
+      
+      STATUS=$(helm status monitoring -n monitoring --output json 2>/dev/null | jq -r .info.status || echo "notfound")
+      
+      if [ "$STATUS" = "pending-upgrade" ] || [ "$STATUS" = "pending-install" ]; then
+        echo "⚠️ Release bloquée en état '$STATUS'. Nettoyage du verrou..."
+        # On trouve le dernier secret de release créé et on le supprime
+        LATEST_SECRET=$(kubectl get secret -n monitoring -l owner=helm,name=monitoring --sort-by=.metadata.creationTimestamp | awk 'END{print $1}')
+        if [ -n "$LATEST_SECRET" ]; then
+          kubectl delete secret "$LATEST_SECRET" -n monitoring
+          echo "✅ Verrou $LATEST_SECRET supprimé avec succès."
+        fi
+      fi
+
+    - echo "🚀 Lancement de l'installation de Prometheus & Grafana..."
+    # On nettoie les jobs de hooks orphelins
     - kubectl delete job -n monitoring -l app.kubernetes.io/name=kube-prometheus-stack --ignore-not-found
     
-    - echo "🚀 Lancement de l'installation de Prometheus & Grafana..."
     - |
       helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
         -n monitoring --create-namespace \
         --set prometheus.prometheusSpec.resources.limits.memory=1024Mi \
         --set grafana.resources.limits.memory=512Mi \
+        --atomic \
         --wait \
-        --timeout 10m
-    # Force le redémarrage pour les nouvelles images
+        --timeout 15m
+
+    # --- FINALISATION ---
+    - echo "🔄 Redémarrage des déploiements pour mise à jour..."
     - kubectl rollout restart deployment
   only:
     - main
