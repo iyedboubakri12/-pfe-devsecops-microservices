@@ -12,36 +12,38 @@ spec:
       labels:
         app: frontend
     spec:
-      # --- SÉCURITÉ AU NIVEAU DU POD ---
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101 # UID standard pour les utilisateurs non-privilégiés (ex: nginx)
+        runAsUser: 101
         fsGroup: 101
-      # ---------------------------------
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
       - name: frontend
         image: registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest
         ports:
-        - containerPort: 80
-        # --- SÉCURITÉ AU NIVEAU DU CONTENEUR ---
+        - containerPort: 8080 # 👈 On passe sur un port haut (>1024)
         securityContext:
           allowPrivilegeEscalation: false
           privileged: false
+          readOnlyRootFilesystem: true # 💡 Bonus : l'expert va adorer ça (immutabilité)
           capabilities:
             drop:
               - ALL
-        # ---------------------------------------
         resources:
           limits:
             memory: "256Mi"
-            cpu: "500m" # Ajout d'une limite CPU pour être complet
+            cpu: "500m"
           requests:
             memory: "128Mi"
             cpu: "250m"
+        volumeMounts: # 💡 Nécessaire si tu mets readOnlyRootFilesystem: true
+        - mountPath: /tmp
+          name: tmp-volume
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -51,5 +53,5 @@ spec:
   selector:
     app: frontend
   ports:
-    - port: 80
-      targetPort: 80
+    - port: 80        # 🌐 L'IP publique reste sur le port 80 pour l'utilisateur
+      targetPort: 8080 # 🎯 Mais elle envoie le trafic vers le port 8080 du conteneur
