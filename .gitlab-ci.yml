@@ -428,46 +428,20 @@ deploy-to-digitalocean:
         --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
         --set falcosidekick.config.defectdojo.productid="1"
 
-    # --- SECTION MONITORING (AVEC AUTO-REPARATION) ---
-    - echo "📈 Préparation du Monitoring..."
+   # Installation/Update du Monitoring (Prometheus/Grafana)
+    - echo "📈 Mise à jour du Monitoring..."
     - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     - helm repo update
-    
     - |
-      echo "🔍 Vérification des verrous Helm pour la release 'monitoring'..."
-      # On installe jq temporairement pour lire le statut Helm
-      apk add --no-cache jq 
-      
-      STATUS=$(helm status monitoring -n monitoring --output json 2>/dev/null | jq -r .info.status || echo "notfound")
-      
-      if [ "$STATUS" = "pending-upgrade" ] || [ "$STATUS" = "pending-install" ]; then
-        echo "⚠️ Release bloquée en état '$STATUS'. Nettoyage du verrou..."
-        # On trouve le dernier secret de release créé et on le supprime
-        LATEST_SECRET=$(kubectl get secret -n monitoring -l owner=helm,name=monitoring --sort-by=.metadata.creationTimestamp | awk 'END{print $1}')
-        if [ -n "$LATEST_SECRET" ]; then
-          kubectl delete secret "$LATEST_SECRET" -n monitoring
-          echo "✅ Verrou $LATEST_SECRET supprimé avec succès."
-        fi
-      fi
-
-    - echo "🚀 Lancement de l'installation de Prometheus & Grafana..."
-    # On nettoie les jobs de hooks orphelins
-    - kubectl delete job -n monitoring -l app.kubernetes.io/name=kube-prometheus-stack --ignore-not-found
-    
-    - |
-      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-        -n monitoring --create-namespace \
+      helm upgrade --install monitoring prometheus-community/kube-prometheus-stack -n monitoring --create-namespace \
         --set prometheus.prometheusSpec.resources.limits.memory=1024Mi \
-        --set grafana.resources.limits.memory=512Mi \
-        --atomic \
-        --wait \
-        --timeout 15m
+        --set grafana.resources.limits.memory=512Mi
 
-    # --- FINALISATION ---
-    - echo "🔄 Redémarrage des déploiements pour mise à jour..."
+    # Force le redémarrage pour les nouvelles images
     - kubectl rollout restart deployment
   only:
     - main
+
 owasp-zap-dast:
   stage: dast-scan
   image: 
