@@ -12,24 +12,24 @@ spec:
       labels:
         app: frontend
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 101
-        fsGroup: 101
       imagePullSecrets:
         - name: gitlab-registry-secret
       containers:
       - name: frontend
         image: registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest
         ports:
-        - containerPort: 8080 # 👈 On passe sur un port haut (>1024)
+        - containerPort: 8080
+        # --- SÉCURITÉ AU NIVEAU DU CONTENEUR (Validé par OPA) ---
         securityContext:
+          runAsNonRoot: true    # <--- La règle OPA cherche cette ligne précise ICI
+          runAsUser: 101        # <--- On définit l'utilisateur 101 (Nginx)
           allowPrivilegeEscalation: false
           privileged: false
-          readOnlyRootFilesystem: true # 💡 Bonus : l'expert va adorer ça (immutabilité)
+          readOnlyRootFilesystem: true
           capabilities:
             drop:
               - ALL
+        # -------------------------------------------------------
         resources:
           limits:
             memory: "256Mi"
@@ -37,13 +37,14 @@ spec:
           requests:
             memory: "128Mi"
             cpu: "250m"
-        volumeMounts: # 💡 Nécessaire si tu mets readOnlyRootFilesystem: true
+        volumeMounts:
         - mountPath: /tmp
           name: tmp-volume
       volumes:
       - name: tmp-volume
         emptyDir: {}
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -53,5 +54,5 @@ spec:
   selector:
     app: frontend
   ports:
-    - port: 80        # 🌐 L'IP publique reste sur le port 80 pour l'utilisateur
-      targetPort: 8080 # 🎯 Mais elle envoie le trafic vers le port 8080 du conteneur
+    - port: 80        # Port d'entrée public DigitalOcean
+      targetPort: 8080 # Envoie vers le port sécurisé du conteneur
