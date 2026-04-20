@@ -45,6 +45,7 @@ spec:
         emptyDir: {}
 ---
 
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -55,4 +56,4 @@ spec:
     app: frontend
   ports:
     - port: 80        # Port d'entrée public DigitalOcean
-      targetPort: 8080 # Envoie vers le port sécurisé du conteneur
+      targetPort: 8080 # Envoie vers le port sécurisé d
