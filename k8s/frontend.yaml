@@ -18,32 +18,24 @@ spec:
       - name: frontend
         image: registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest
         ports:
-        - containerPort: 8080
-        # --- SÉCURITÉ AU NIVEAU DU CONTENEUR (Validé par OPA) ---
-        securityContext:
-          runAsNonRoot: true    # <--- La règle OPA cherche cette ligne précise ICI
-          runAsUser: 101        # <--- On définit l'utilisateur 101 (Nginx)
-          allowPrivilegeEscalation: false
-          privileged: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop:
-              - ALL
-        # -------------------------------------------------------
+        - containerPort: 80
         resources:
           limits:
             memory: "256Mi"
-            cpu: "500m"
           requests:
             memory: "128Mi"
-            cpu: "250m"
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp-volume
-      volumes:
-      - name: tmp-volume
-        emptyDir: {}
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  type: LoadBalancer # DigitalOcean va générer une IP publique réelle
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
 
 
 apiVersion: v1
