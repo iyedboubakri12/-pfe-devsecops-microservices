@@ -13,3 +13,4 @@ spec:
       - "kube-system"
       - "falco"
       - "logging"
+      - "app-frontend"
