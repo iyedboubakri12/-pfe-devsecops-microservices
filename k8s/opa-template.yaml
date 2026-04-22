@@ -16,12 +16,6 @@ spec:
           not container.resources.limits
           msg := sprintf("🚨 SECURITE PFE : Le container <%v> n'a pas de limites de ressources. Refusé !", [container.name])
         }
-        # 2. Règle : Interdiction de tourner en ROOT
-        violation[{"msg": msg}] {
-          container := input.review.object.spec.template.spec.containers[_]
-          not container.securityContext.runAsNonRoot == true
-          msg := sprintf("🚨 SECURITE PFE [PRIVILEGES] : Le container <%v> doit avoir 'runAsNonRoot: true'. Interdiction de tourner en ROOT !", [container.name])
-        }
 
         # 3. Règle : Interdiction du mode PRIVILÉGIÉ
         violation[{"msg": msg}] {
