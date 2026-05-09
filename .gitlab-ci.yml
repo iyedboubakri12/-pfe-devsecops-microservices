@@ -34,6 +34,7 @@ stages:
   - deploy-cloud 
   - dast-scan
   - upload-defectdojo
+  - ai-remediation
 
 ############################
 # 1️⃣ INSTALLATION DES MODULES COMMUNS
@@ -578,6 +579,21 @@ upload-opa-to-jira:
       fi  
 
     - sl check-analysis --app "$CI_PROJECT_NAME-backend" --report --format sarif > qwiet-report.sarif
+ai-remediation-agent:
+  stage: ai-remediation
+  image: python:3.11-slim
+  tags: [vm]
+  needs: ["opa-gatekeeper-check"] # Il attend le rapport technique
+  before_script:
+    - pip install -q requests google-genai
+  script:
+    - echo "🤖 Lancement de l'Agent IA pour la remédiation..."
+    # On lance ton script Python
+    - python3 ai-remediator/remediate.py
+  # TRÈS IMPORTANT : On le lance même si les jobs précédents ont échoué
+  # car c'est quand il y a une erreur qu'on a besoin de l'IA !
+  when: always 
+  allow_failure: true
 
     # 3. Envoi du rapport Qwiet vers DefectDojo
     - |
