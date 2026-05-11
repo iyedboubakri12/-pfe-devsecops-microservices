@@ -422,7 +422,7 @@ deploy-to-digitalocean:
     - |
       helm upgrade --install falco falcosecurity/falco -n falco --create-namespace \
         --set falcosidekick.enabled=true \
-        --set falcosidekick.config.webhook.address="https://orange-books-wave.loca.lt/falco-webhook" \
+        --set falcosidekick.config.webhook.address="https://easy-phones-lead.loca.lt/falco-webhook" \
         --set falcosidekick.config.webhook.minimumpriority="notice" \
         --set falcosidekick.config.slack.webhookurl="" \
         --set falcosidekick.config.defectdojo.url="${DEFECTDOJO_URL}" \
