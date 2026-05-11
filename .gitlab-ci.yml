@@ -416,15 +416,15 @@ deploy-to-digitalocean:
     - kubectl get nodes
     - kubectl apply -f k8s/
 
-    # --- SECTION FALCO ---
-    - echo "🕵️ Mise à jour de Falco (Runtime Security)..."
-    - helm repo add falcosecurity https://falcosecurity.github.io/charts
-    - helm repo update
+   # --- SECTION FALCO (AVEC FILTRE IA) ---
+    - echo "🕵️ Mise à jour de Falco avec redirection vers l'IA..."
+    - helm repo add falcosecurity https://falcosecurity.github.io/charts && helm repo update
     - |
       helm upgrade --install falco falcosecurity/falco -n falco --create-namespace \
         --set falcosidekick.enabled=true \
-        --set falcosidekick.config.slack.webhookurl="${SLACK_WEBHOOK}" \
-        --set falcosidekick.config.slack.minimumpriority="notice" \
+        --set falcosidekick.config.webhook.address="https://orange-books-wave.loca.lt/falco-webhook" \
+        --set falcosidekick.config.webhook.minimumpriority="notice" \
+        --set falcosidekick.config.slack.webhookurl="" \
         --set falcosidekick.config.defectdojo.url="${DEFECTDOJO_URL}" \
         --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
         --set falcosidekick.config.defectdojo.productid="1"
