@@ -592,21 +592,24 @@ upload-opa-to-jira:
         -F "product_name=DigitalOcean-App" \
         -F "engagement_name=Qwiet Scan" \
         -F "file=@qwiet-report.sarif"
+# N'oublie pas d'ajouter le stage en haut de ton fichier
+# stages:
+#   - ...
+#   - ai-remediation
+
 ai-remediation-agent:
   stage: ai-remediation
   image: python:3.11-slim
   tags: [vm]
-  needs: ["opa-gatekeeper-check"] # Il attend le rapport technique
+  needs: ["opa-gatekeeper-check"]
   before_script:
     - pip install -q requests google-genai
   script:
     - echo "🤖 Lancement de l'Agent IA pour la remédiation..."
-    # On lance ton script Python
     - python3 ai-remediator/remediate.py
-  # TRÈS IMPORTANT : On le lance même si les jobs précédents ont échoué
-  # car c'est quand il y a une erreur qu'on a besoin de l'IA !
   when: always 
   allow_failure: true
+
 test-falco-ai-alert:
   stage: ai-remediation
   image: dtzar/helm-kubectl:latest
@@ -614,15 +617,19 @@ test-falco-ai-alert:
   variables:
     KUBECONFIG: $KUBECONFIG_CONTENT
   script:
-    - echo "🧪 Simulation d'une attaque pour tester l'IA de Falco..."
-    # 1. On récupère le nom d'un pod qui tourne (ex: le frontend)
-    - POD_NAME=$(kubectl get pods -l app=frontend -o jsonpath="{.items[0].metadata.name}")
-    - echo "Cible du test : $POD_NAME"
-    
-    # 2. On exécute la commande interdite (lecture du fichier shadow)
-    # Le "|| true" est important car la commande va échouer (Permission denied) 
-    # mais Falco va quand même détecter la tentative !
-    - kubectl exec $POD_NAME -- cat /etc/shadow || true
-    
-    - echo "✅ Attaque simulée. Vérifie ton Slack pour l'analyse de l'IA !"
-  when: manual # On le met en manuel pour le déclencher pendant la démo  
+    - |
+      echo "🧪 Simulation d'une attaque pour tester l'IA de Falco..."
+      # On utilise des simples quotes pour le jsonpath pour éviter les conflits YAML
+      POD_NAME=$(kubectl get pods -l app=frontend -o jsonpath='{.items[0].metadata.name}')
+      echo "Cible du test : $POD_NAME"
+      
+      if [ -z "$POD_NAME" ]; then
+        echo "❌ Erreur : Aucun pod frontend trouvé !"
+        exit 1
+      fi
+
+      echo "🔥 Tentative de lecture de /etc/shadow..."
+      kubectl exec $POD_NAME -- cat /etc/shadow || true
+      
+      echo "✅ Attaque simulée. Vérifie ton Slack pour l'analyse de l'IA !"
+  when: manual
