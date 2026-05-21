@@ -309,6 +309,44 @@ docker-build-frontend:
     - echo "🚀 Building frontend"
     - docker build --pull -t $IMAGE .
     - docker push $IMAGE
+generate-sbom:
+  stage: docker-scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  tags:
+    - vm
+
+  needs:
+    - docker-build-backend
+    - docker-build-frontend
+
+  script:
+    - mkdir -p reports/
+
+    - |
+      REGISTRY="registry.gitlab.com/devsecopsi-group/devsecops-project"
+
+      for service in eureka-service course-service api-gateway-service user-service exam-service answer-service frontend; do
+
+        IMAGE="$REGISTRY/$service:latest"
+
+        echo "📦 Génération SBOM pour $IMAGE"
+
+        trivy image \
+          --username gitlab-ci-token \
+          --password $CI_JOB_TOKEN \
+          --format cyclonedx \
+          --output "reports/${service}-sbom.json" \
+          $IMAGE || true
+
+      done
+
+  artifacts:
+    when: always
+    paths:
+      - reports/*-sbom.json
+    expire_in: 1 week    
 qwiet-prezero-scan:
   stage: test-security
   image: ubuntu:latest
