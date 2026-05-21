@@ -425,6 +425,26 @@ container_scan:
     - main
 
   when: manual
+sign-images:
+  stage: docker-scan
+  image: 
+    name: bitnami/cosign:latest
+    entrypoint: [""]
+  tags: [vm]
+  needs: ["docker-build-backend", "docker-build-frontend"]
+  script:
+    - echo "🔏 Signature cryptographique des images..."
+    # 1. Connexion au registre pour uploader la signature
+    - echo "$CI_JOB_TOKEN" | cosign login registry.gitlab.com -u gitlab-ci-token --password-stdin
+    
+    # 2. Signature des images (Backend et Frontend)
+    - |
+      for service in user-service exam-service answer-service course-service api-gateway-service eureka-service frontend; do
+        IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/$service:latest"
+        echo "Signing $IMAGE"
+        cosign sign --key env://COSIGN_PRIVATE_KEY --tlog-upload=false $IMAGE
+      done
+  allow_failure: true
 secret-detection:
   stage: security-scan
   tags:
