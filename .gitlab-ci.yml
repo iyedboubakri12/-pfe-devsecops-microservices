@@ -67,7 +67,7 @@ build-all-backend:
   artifacts:
     paths:
       - "backend/*/target/*.jar"
-    expire_in: 2 hours
+    expire_in: 3 hours
   
 
 ############################
@@ -85,7 +85,7 @@ build-frontend-app:
   artifacts:
     paths:
       - frontend/dist/
-    expire_in: 2 hours
+    expire_in: 3 hours
   
 
 ############################
