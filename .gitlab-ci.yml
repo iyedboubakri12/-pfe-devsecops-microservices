@@ -1,4 +1,14 @@
 ############################
+# COMPOSANTS EXTERNES
+############################
+include:
+  - component: gitlab.com/getplumber/plumber/plumber@v0.3.4
+    inputs:
+      stage: security-audit
+      threshold: 80
+      mr_comment: true
+      allow_failure: true
+############################
 # VARIABLES GLOBALES
 ############################
 variables:
@@ -656,26 +666,6 @@ upload-opa-to-jira:
 # stages:
 #   - ...
 #   - ai-remediation
-############################
-# 11️⃣ PLUMBER - AUDIT DE CONFORMITÉ
-############################
-plumber-analyze:
-  stage: security-audit
-  image: 
-    name: getplumber/plumber:latest
-    entrypoint: [""]
-  tags: [vm]
-  script:
-    - echo "🛡️ Analyse de conformité et sécurité du pipeline par Plumber..."
-    # Utilisation des variables GitLab pour l'automatisation totale
-    - plumber analyze --gitlab-url $CI_SERVER_URL --project $CI_PROJECT_PATH --output plumber-results.json
-  artifacts:
-    when: always
-    paths:
-      - plumber-results.json
-    expire_in: 1 week
-  allow_failure: true
-
 ai-remediation-agent:
   stage: ai-remediation
   image: python:3.11-slim
