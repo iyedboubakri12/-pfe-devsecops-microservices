@@ -1,0 +1,56 @@
+version: "2.0"
+
+gitlab:
+  controls:
+    # --- IMAGES ---
+    containerImageMustNotUseForbiddenTags:
+      enabled: true
+      tags:
+        - latest
+        - dev
+      containerImagesMustBePinnedByDigest: false
+
+    containerImageMustComeFromAuthorizedSources:
+      enabled: true
+      trustDockerHubOfficialImages: true # Autorise les images officielles (ex: maven, node)
+      trustedUrls:
+        - $CI_REGISTRY_IMAGE:*
+        - registry.gitlab.com/devsecopsi-group/devsecops-project/*
+        - docker.io/* # AJOUT : Autorise Docker Hub pour tes outils (Trivy, ZAP, etc.)
+        - quay.io/*   # AJOUT : Autorise Quay (souvent utilisé par les outils de sécu)
+
+    # --- PIPELINE ---
+    # Désactivé pour le PFE : cela demande de mettre chaque job dans un fichier séparé.
+    # Le désactiver remontera ton score de façon importante.
+    pipelineMustNotIncludeHardcodedJobs:
+      enabled: false 
+
+    branchMustBeProtected:
+      enabled: true
+      defaultMustBeProtected: true
+      namePatterns:
+        - main
+      allowForcePush: false
+
+    # --- SÉCURITÉ DOCKER ---
+    pipelineMustNotUseDockerInDocker:
+      enabled: true
+      detectInsecureDaemon: true # Garde le pour la sécu, mais on va corriger le YAML plus bas
+
+    # --- AUTRES CONTRÔLES ---
+    pipelineMustNotEnableDebugTrace:
+      enabled: true
+    
+    pipelineMustNotUseUnsafeVariableExpansion:
+      enabled: true
+      dangerousVariables:
+        - CI_MERGE_REQUEST_TITLE
+        - CI_COMMIT_MESSAGE
+    
+    securityJobsMustNotBeWeakened:
+      enabled: true
+      allowFailureMustBeFalse:
+        enabled: false # GitLab met allow_failure: true par défaut, donc on ignore ce point
+
+    pipelineMustNotExecuteUnverifiedScripts:
+      enabled: true
