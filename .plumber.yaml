@@ -2,48 +2,133 @@ version: "2.0"
 
 gitlab:
   controls:
-    # --- GESTION DES IMAGES ---
     containerImageMustNotUseForbiddenTags:
       enabled: true
       tags:
         - latest
         - dev
-      # IMPORTANT : On met à "false" car épingler par SHA256 est trop lourd pour un PFE
+        - main
+      # When true, ALL images must be pinned by digest. Takes precedence
+      # over the tags list, so even version tags like alpine:3.19 fail.
       containerImagesMustBePinnedByDigest: false
 
     containerImageMustComeFromAuthorizedSources:
       enabled: true
-      trustDockerHubOfficialImages: true 
+      trustDockerHubOfficialImages: true
       trustedUrls:
         - $CI_REGISTRY_IMAGE:*
-        - registry.gitlab.com/devsecopsi-group/devsecops-project/*
-        - docker.io/*  # Autorise Docker Hub pour Trivy, Sonar, etc.
-        - quay.io/*    # Autorise Quay.io
-
-    # --- STRUCTURE DU PIPELINE ---
-    # On désactive ce contrôle car tu as 28 jobs "hardcoded" (dans un seul fichier)
-    # Cela fera monter ton score immédiatement.
-    pipelineMustNotIncludeHardcodedJobs:
-      enabled: false
+        - registry.gitlab.com/security-products/*
 
     branchMustBeProtected:
       enabled: true
       defaultMustBeProtected: true
       namePatterns:
         - main
+        - release/*
       allowForcePush: false
+      minMergeAccessLevel: 30   # Developer
+      minPushAccessLevel: 40    # Maintainer
 
-    # --- SÉCURITÉ DOCKER ---
-    pipelineMustNotUseDockerInDocker:
+    pipelineMustNotIncludeHardcodedJobs:
       enabled: true
-      detectInsecureDaemon: true # Te préviendra si le TLS est coupé
 
-    # --- AUTRES CONTRÔLES ---
+    includesMustBeUpToDate:
+      enabled: true
+
+    includesMustNotUseForbiddenVersions:
+      enabled: true
+      forbiddenVersions:
+        - latest
+        - "~latest"
+        - main
+        - master
+        - HEAD
+      defaultBranchIsForbiddenVersion: false
+
+    pipelineMustIncludeComponent:
+      enabled: false  # Disabled by default. Enable and configure for your org.
+      # Expression syntax (use one, not both):
+      # required: components/sast/sast AND components/secret-detection/secret-detection
+      # Array syntax (OR of ANDs):
+      # requiredGroups:
+      #   - ["components/sast/sast", "components/secret-detection/secret-detection"]
+      #   - ["your-org/full-security/full-security"]
+
+    pipelineMustIncludeTemplate:
+      enabled: false  # Disabled by default. Enable and configure for your org.
+      # Expression syntax (use one, not both):
+      # required: templates/go/go AND templates/trivy/trivy
+      # Array syntax (OR of ANDs):
+      # requiredGroups:
+      #   - ["templates/go/go", "templates/trivy/trivy"]
+      #   - ["templates/full-go-pipeline"]
+
+    # Detect debug trace variables that leak secrets in job logs.
     pipelineMustNotEnableDebugTrace:
       enabled: true
-    
+      forbiddenVariables:
+        - CI_DEBUG_TRACE
+        - CI_DEBUG_SERVICES
+
+    # Detect user-controlled variables in shell re-interpretation contexts
+    # (eval, sh -c, etc.). Safe: echo $CI_COMMIT_BRANCH. Dangerous: eval
+    # "deploy $CI_COMMIT_BRANCH".
+    pipelineMustNotUseUnsafeVariableExpansion:
+      enabled: true
+      dangerousVariables:
+        - CI_MERGE_REQUEST_TITLE
+        - CI_MERGE_REQUEST_DESCRIPTION
+        - CI_COMMIT_MESSAGE
+        - CI_COMMIT_TITLE
+        - CI_COMMIT_TAG_MESSAGE
+        - CI_COMMIT_REF_NAME
+        - CI_COMMIT_REF_SLUG
+        - CI_COMMIT_BRANCH
+        - CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+        - CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
+      # Regex patterns to allow specific script lines (escape $ as \\$).
+      allowedPatterns:
+        - "helm.*--set.*\\$CI_"
+        - "terraform workspace select.*\\$CI_"
+        - "docker build.*--build-arg.*\\$CI_"
+
+    # Detect security scanning jobs that have been silently weakened.
     securityJobsMustNotBeWeakened:
       enabled: true
-      # On autorise "allow_failure: true" pour ne pas bloquer tes tests
+      securityJobPatterns:
+        - "*-sast"
+        - "secret_detection"
+        - "container_scanning"
+        - "*_dependency_scanning"
+        - "gemnasium-*"
+        - "dast"
+        - "dast_*"
+        - "license_scanning"
       allowFailureMustBeFalse:
-        enabled: false
+        enabled: false   # opt-in: GitLab templates ship with allow_failure: true
+      rulesMustNotBeRedefined:
+        enabled: true
+      whenMustNotBeManual:
+        enabled: true
+
+    # Detect controlled variables overridden in .gitlab-ci.yml.
+    pipelineMustNotOverrideJobVariables:
+      enabled: true
+      variables:
+        - SECURE_ANALYZERS_PREFIX
+        - SAST_DISABLED
+        - SAST_EXCLUDED_PATHS
+        - SECRET_DETECTION_DISABLED
+        - CONTAINER_SCANNING_DISABLED
+        - DAST_DISABLED
+
+    # Detect unverified script downloads and execution (curl|bash, wget|sh).
+    pipelineMustNotExecuteUnverifiedScripts:
+      enabled: true
+      trustedUrls: []
+        # - https://internal-artifacts.example.com/*
+
+    # Detect Docker-in-Docker services and insecure daemon configuration.
+    pipelineMustNotUseDockerInDocker:
+      enabled: true
+      detectInsecureDaemon: true
