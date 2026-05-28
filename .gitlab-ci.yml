@@ -30,6 +30,7 @@ stages:
   - policy-check 
   - docker-build
   - docker-scan
+  - security-audit
   - test-security
   - deploy-cloud 
   - dast-scan
@@ -655,6 +656,25 @@ upload-opa-to-jira:
 # stages:
 #   - ...
 #   - ai-remediation
+############################
+# 11️⃣ PLUMBER - AUDIT DE CONFORMITÉ
+############################
+plumber-analyze:
+  stage: security-audit
+  image: 
+    name: getplumber/plumber:latest
+    entrypoint: [""]
+  tags: [vm]
+  script:
+    - echo "🛡️ Analyse de conformité et sécurité du pipeline par Plumber..."
+    # Utilisation des variables GitLab pour l'automatisation totale
+    - plumber analyze --gitlab-url $CI_SERVER_URL --project $CI_PROJECT_PATH --output plumber-results.json
+  artifacts:
+    when: always
+    paths:
+      - plumber-results.json
+    expire_in: 1 week
+  allow_failure: true
 
 ai-remediation-agent:
   stage: ai-remediation
@@ -692,3 +712,4 @@ test-falco-ai-alert:
       
       echo "✅ Attaque simulée. Vérifie ton Slack pour l'analyse de l'IA !"
   when: manual
+  
