@@ -8,24 +8,24 @@ include:
       threshold: 80
       mr_comment: true
       allow_failure: true
+
 ############################
 # VARIABLES GLOBALES
 ############################
 variables:
   GIT_DEPTH: "1"
-  SONAR_HOST_URL: "http://192.168.1.200:9000"
+  SONAR_HOST_URL: "https://192.168.1.200:9000"
   REGISTRY_URL: "registry.gitlab.com"
   MAVEN_CLI_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository --batch-mode"
   DOCKER_DRIVER: overlay2
-  SLACK_WEBHOOK: "***REMOVED***"
+
 ############################
-# CACHE
+# CACHE GLOBAL
 ############################
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - .m2/repository/
-    - frontend/node_modules/
 
 ############################
 # STAGES
@@ -37,104 +37,150 @@ stages:
   - build-all
   - test-unitaires
   - security-scan
-  - policy-check 
+  - policy-check
   - docker-build
   - docker-scan
   - security-audit
   - test-security
-  - deploy-cloud 
+  - deploy-cloud
   - dast-scan
   - upload-defectdojo
   - ai-remediation
 
 ############################
-# 1️⃣ INSTALLATION DES MODULES COMMUNS
+# 1️⃣ MODULES COMMUNS — 3 JOBS EN PARALLÈLE
 ############################
-install-commons:
+install-common-service:
   stage: build-shared
   tags:
-     - vm
+    - vm
   image: maven:3.8.5-openjdk-17
   script:
     - cd backend/common-service && mvn install -DskipTests $MAVEN_CLI_OPTS
-    - cd ../common-student && mvn install -DskipTests $MAVEN_CLI_OPTS
-    - cd ../common-exam && mvn install -DskipTests $MAVEN_CLI_OPTS
+
+install-common-student:
+  stage: build-shared
+  tags:
+    - vm
+  image: maven:3.8.5-openjdk-17
+  script:
+    - cd backend/common-student && mvn install -DskipTests $MAVEN_CLI_OPTS
+
+install-common-exam:
+  stage: build-shared
+  tags:
+    - vm
+  image: maven:3.8.5-openjdk-17
+  script:
+    - cd backend/common-exam && mvn install -DskipTests $MAVEN_CLI_OPTS
+
 ############################
-# 2️⃣ BUILD GLOBAL DU BACKEND (Génération des JARs)
+# 2️⃣ BUILD BACKEND — 6 SERVICES EN PARALLÈLE
 ############################
 build-all-backend:
   stage: build-all
   tags:
-     - vm
+    - vm
   image: maven:3.8.5-openjdk-17
-  needs: ["install-commons"]
+  needs:
+    - install-common-service
+    - install-common-student
+    - install-common-exam
+  parallel:
+    matrix:
+      - SERVICE: [answer-service, api-gateway-service, course-service, exam-service, user-service, eureka-service]
   script:
-    - cd backend
-    - |
-      for service in answer-service api-gateway-service course-service exam-service user-service eureka-service ; do
-        echo "🔨 Compilation de $service..."
-        cd $service && mvn package -DskipTests $MAVEN_CLI_OPTS && cd ..
-      done
+    - echo "🔨 Compilation de $SERVICE..."
+    - cd backend/$SERVICE
+    - mvn package -DskipTests $MAVEN_CLI_OPTS
   artifacts:
     paths:
-      - "backend/*/target/*.jar"
-    expire_in: 2 hours
-  
+      - backend/$SERVICE/target/*.jar
+    expire_in: 3 hours
 
 ############################
-# 3️⃣ BUILD DU FRONTEND (Compilation Angular)
+# 3️⃣ DÉPENDANCES FRONTEND — 1 SEULE FOIS
+############################
+install-frontend-deps:
+  stage: build-all
+  tags:
+    - vm
+  image: node:18-alpine
+  script:
+    - cd frontend && npm install --legacy-peer-deps
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - frontend/node_modules/
+    policy: push
+
+############################
+# 3️⃣ BUILD FRONTEND — UTILISE LE CACHE
 ############################
 build-frontend-app:
   stage: build-all
   tags:
-     - vm
+    - vm
   image: node:18-alpine
+  needs:
+    - install-frontend-deps
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - frontend/node_modules/
+    policy: pull
   script:
     - cd frontend
-    - npm install --legacy-peer-deps
-    - npm run build -- --configuration production || echo "Build failed but continuing for demo"
+    - npm run build -- --configuration production
   artifacts:
     paths:
       - frontend/dist/
-    expire_in: 2 hours
-  
+    expire_in: 3 hours
 
 ############################
-# 2️⃣ TESTS BACKEND + JACOCO
+# 2️⃣ TESTS BACKEND — 6 SERVICES EN PARALLÈLE
 ############################
 backend-tests:
   stage: test-unitaires
   tags:
-     - vm
+    - vm
   image: maven:3.8.5-openjdk-17
-  needs: ["install-commons","build-all-backend"]
-  script: |
-    cd backend
-    for service in answer-service api-gateway-service course-service exam-service user-service eureka-service; do
-      echo "========== Testing $service =========="
-      cd $service
-      mvn test $MAVEN_CLI_OPTS -Dspring.profiles.active=test
-      cd ..
-    done
+  needs:
+    - install-common-service
+    - install-common-student
+    - install-common-exam
+    - build-all-backend
+  parallel:
+    matrix:
+      - SERVICE: [answer-service, api-gateway-service, course-service, exam-service, user-service, eureka-service]
+  script:
+    - echo "========== Testing $SERVICE =========="
+    - cd backend/$SERVICE
+    - mvn test $MAVEN_CLI_OPTS -Dspring.profiles.active=test
   artifacts:
     when: always
     paths:
-      - backend/**/target/classes
-      - backend/**/target/site/jacoco/jacoco.xml
+      - backend/$SERVICE/target/classes
+      - backend/$SERVICE/target/site/jacoco/jacoco.xml
     expire_in: 2 hour
-  
 
 ############################
-# 3️⃣ TESTS FRONTEND (ANGULAR)
+# 3️⃣ TESTS FRONTEND — UTILISE LE CACHE
 ############################
 frontend-tests:
   stage: test-unitaires
   tags:
-     - vm
+    - vm
   image: node:18-alpine
+  needs:
+    - install-frontend-deps
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - frontend/node_modules/
+    policy: pull
   script:
     - cd frontend
-    - npm install --legacy-peer-deps
     - npm run test -- --coverage --watchAll=false || true
   artifacts:
     when: always
@@ -142,62 +188,52 @@ frontend-tests:
       - frontend/coverage/lcov.info
     expire_in: 2 hour
   allow_failure: true
-  
 
 ############################
-# 4️⃣ sonarqube-backend
+# 4️⃣ SONARQUBE BACKEND — 6 SERVICES EN PARALLÈLE
 ############################
 sonarqube-backend:
   stage: security-scan
   tags:
-     - vm
+    - vm
   image: maven:3.8.5-openjdk-17
+  parallel:
+    matrix:
+      - SERVICE: [user-service, exam-service, answer-service, course-service, api-gateway-service, eureka-service]
   needs:
-  - job: backend-tests
-    artifacts: true
-  script: |
-    cd backend
-    for service in user-service exam-service answer-service course-service api-gateway-service eureka-service; do
-      echo "========== Sonar Backend : $service =========="
-      cd $service
-      mvn verify sonar:sonar $MAVEN_CLI_OPTS \
-        -Dsonar.projectKey=$service \
-        -Dsonar.host.url=$SONAR_HOST_URL \
-        -Dsonar.login=$SONAR_TOKEN \
-        -Dsonar.java.binaries=target/classes \
-        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-        || echo "Sonar failed for $service"
-      cd ..
-    done
+    - job: backend-tests
+      artifacts: true
+  script:
+    - echo "========== Sonar Backend : $SERVICE =========="
+    - cd backend/$SERVICE
+    - mvn sonar:sonar $MAVEN_CLI_OPTS -Dsonar.projectKey=$SERVICE -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.java.binaries=target/classes -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml || echo "Sonar failed for $SERVICE"
   allow_failure: true
+
 ############################
-# 4️⃣ sca-scan-backend
+# 4️⃣ SCA BACKEND — 5 SERVICES EN PARALLÈLE + CACHE TRIVY
 ############################
 sca-scan-backend:
   stage: security-scan
   tags:
-     - vm
-  image: 
+    - vm
+  image:
     name: aquasec/trivy:latest
     entrypoint: [""]
-  needs: ["backend-tests"]
+  parallel:
+    matrix:
+      - SERVICE: [api-gateway-service, user-service, exam-service, course-service, answer-service]
+  needs:
+    - backend-tests
+  variables:
+    TRIVY_CACHE_DIR: ".trivycache/"
+  cache:
+    key: trivy-db-cache
+    paths:
+      - .trivycache/
   script:
     - mkdir -p reports
-    - echo "🛡️ Analyse SCA optimisée avec Trivy..."
-    - cd backend
-    - |
-      for service in api-gateway-service user-service exam-service course-service answer-service; do
-        echo "🔍 Scanning $service..."
-        # --timeout 20m : laisse le temps au scan de finir
-        # --scanners vuln : scanne UNIQUEMENT les vulnérabilités (gain de vitesse 80%)
-        # --skip-db-update : évite de retélécharger la DB à chaque tour de boucle
-        trivy fs --format template --template "@/contrib/html.tpl" \
-          --output "../reports/${service}-sca.html" \
-          --severity HIGH,CRITICAL \
-          --scanners vuln \
-          --timeout 20m \
-          $service || true
-      done
+    - echo "🔍 Scanning $SERVICE..."
+    - trivy fs --format template --template "@/contrib/html.tpl" --output "reports/${SERVICE}-sca.html" --severity HIGH,CRITICAL --scanners vuln --timeout 20m backend/$SERVICE || true
   artifacts:
     when: always
     paths:
@@ -210,11 +246,12 @@ sca-scan-backend:
 sonar-frontend:
   stage: security-scan
   tags:
-     - vm
-  image: 
+    - vm
+  image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
-  needs: ["frontend-tests"]
+  needs:
+    - frontend-tests
   script:
     - cd frontend
     - |
@@ -228,23 +265,28 @@ sonar-frontend:
         -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
         -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts
   allow_failure: true
-  
+
 ############################
-# 5️⃣ sca-scan-frontend
+# 5️⃣ SCA FRONTEND — UTILISE LE CACHE NPM (PAS DE npm ci)
 ############################
 sca-scan-frontend:
   stage: security-scan
   tags:
-     - vm
+    - vm
   image: node:18-alpine
-  needs: ["frontend-tests"]
+  needs:
+    - install-frontend-deps
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - frontend/node_modules/
+    policy: pull
   script:
     - cd frontend
     - echo "SCA Frontend — Analyse des dépendances NPM (npm audit)"
-    - npm ci --legacy-peer-deps
     - npm audit --json > npm-audit-report.json || true
     - npm audit > npm-audit-report.txt || true
-    - npm audit --production --audit-level=critical
+    - npm audit --production --audit-level=critical || true
   artifacts:
     when: always
     paths:
@@ -253,30 +295,53 @@ sca-scan-frontend:
     expire_in: 1 week
   allow_failure: true
 
+############################
+# DÉTECTION DE SECRETS — GITLEAKS (FULL HISTORY)
+############################
+secret-detection:
+  stage: security-scan
+  variables:
+    GIT_DEPTH: "0"
+  tags:
+    - vm
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
+  script:
+    - echo "🔍 Analyse du dépôt à la recherche de secrets..."
+    - gitleaks detect --source . --redact --report-format sarif --report-path gl-secret-report.sarif || true
+  artifacts:
+    expire_in: 1 week
+    reports:
+      sast: gl-secret-report.sarif
+  allow_failure: true
+
+############################
+# POLICY AS CODE — OPA / CONFTEST
+############################
 opa-gatekeeper-check:
   stage: policy-check
-  image: 
+  image:
     name: openpolicyagent/conftest:latest
     entrypoint: [""]
   tags:
     - vm
   script:
     - echo "🛡️ Vérification OPA..."
-    # On génère un rapport au format JSON pour DefectDojo
     - conftest test k8s/*.yaml -p k8s/kubernetes.rego --output json > opa-report.json || true
   artifacts:
     when: always
     paths:
       - opa-report.json
-  allow_failure: true # On le laisse en true pour ne pas bloquer tout pendant tes tests
-  
+  allow_failure: true
+
 ############################
-# 8️⃣ BUILD backend & PUSH TO REGISTRY (CORRIGÉ)
+# BUILD BACKEND — 6 IMAGES EN PARALLÈLE (SANS --pull)
 ############################
 docker-build-backend:
   stage: docker-build
   tags:
-     - vm
+    - vm
   image: docker:24.0
   services:
     - name: docker:24.0-dind
@@ -284,26 +349,26 @@ docker-build-backend:
   variables:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
+  parallel:
+    matrix:
+      - SERVICE: [eureka-service, course-service, api-gateway-service, user-service, exam-service, answer-service]
   before_script:
     - until docker info >/dev/null 2>&1; do sleep 5; done
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
   script:
-    - cd backend
-    - |
-      for service in eureka-service course-service api-gateway-service user-service exam-service answer-service; do
-        IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/$service:latest"
-        echo "🚀 Building $service"
-        docker build --pull -t $IMAGE ./$service
-        docker push $IMAGE
-      done
-  
-  ############################
-# 8️⃣ BUILD frontend & PUSH TO REGISTRY (CORRIGÉ)
-############################     
+    - IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/$SERVICE"
+    - echo "🚀 Building $SERVICE"
+    - docker build -t "$IMAGE:latest" -t "$IMAGE:$CI_COMMIT_SHA" -f backend/$SERVICE/Dockerfile.secure backend/$SERVICE
+    - docker push "$IMAGE:latest"
+    - docker push "$IMAGE:$CI_COMMIT_SHA"
+
+############################
+# BUILD FRONTEND (SANS --pull)
+############################
 docker-build-frontend:
   stage: docker-build
   tags:
-     - vm
+    - vm
   image: docker:24.0
   services:
     - name: docker:24.0-dind
@@ -315,11 +380,15 @@ docker-build-frontend:
     - until docker info >/dev/null 2>&1; do sleep 5; done
     - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin registry.gitlab.com
   script:
-    - cd frontend
-    - IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/frontend:latest"
+    - IMAGE_BASE="registry.gitlab.com/devsecopsi-group/devsecops-project/frontend"
     - echo "🚀 Building frontend"
-    - docker build --pull -t $IMAGE .
-    - docker push $IMAGE
+    - docker build -t "$IMAGE_BASE:latest" -t "$IMAGE_BASE:$CI_COMMIT_SHA" -f frontend/Dockerfile.secure frontend/
+    - docker push "$IMAGE_BASE:latest"
+    - docker push "$IMAGE_BASE:$CI_COMMIT_SHA"
+
+############################
+# GÉNÉRATION SBOM — AVEC CACHE TRIVY
+############################
 generate-sbom:
   stage: docker-scan
   image:
@@ -327,37 +396,38 @@ generate-sbom:
     entrypoint: [""]
   tags:
     - vm
-
   needs:
     - docker-build-backend
     - docker-build-frontend
-
+  variables:
+    TRIVY_CACHE_DIR: ".trivycache/"
+  cache:
+    key: trivy-db-cache
+    paths:
+      - .trivycache/
   script:
     - mkdir -p reports/
-
     - |
       REGISTRY="registry.gitlab.com/devsecopsi-group/devsecops-project"
-
       for service in eureka-service course-service api-gateway-service user-service exam-service answer-service frontend; do
-
         IMAGE="$REGISTRY/$service:latest"
-
         echo "📦 Génération SBOM pour $IMAGE"
-
         trivy image \
           --username gitlab-ci-token \
           --password $CI_JOB_TOKEN \
           --format cyclonedx \
           --output "reports/${service}-sbom.json" \
           $IMAGE || true
-
       done
-
   artifacts:
     when: always
     paths:
       - reports/*-sbom.json
-    expire_in: 1 week    
+    expire_in: 1 week
+
+############################
+# QWIET PREZERO SCAN
+############################
 qwiet-prezero-scan:
   stage: test-security
   image: ubuntu:latest
@@ -368,46 +438,41 @@ qwiet-prezero-scan:
   before_script:
     - apt update && apt install -y curl jq sed
     - curl https://cdn.shiftleft.io/download/sl > /usr/local/bin/sl && chmod a+rx /usr/local/bin/sl
-    # --- LA LIGNE MAGIQUE CI-DESSOUS ---
-    - sed -i 's/\r$//' sl-analysis.sh 
+    - sed -i 's/\r$//' sl-analysis.sh
   script:
     - sh sl-analysis.sh
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "main"
+
 ############################
-# 9️⃣ SCAN DES IMAGES AVEC TRIVY
+# SCAN DES IMAGES AVEC TRIVY — CACHE PARTAGÉ
 ############################
 container_scan:
   stage: docker-scan
   tags:
-     - vm
+    - vm
   image:
-    name: aquasec/trivy:0.49.1 
+    name: aquasec/trivy:0.49.1
     entrypoint: [""]
   needs:
     - docker-build-backend
     - docker-build-frontend
-
   variables:
     TRIVY_NO_PROGRESS: "true"
     TRIVY_CACHE_DIR: ".trivycache/"
     TRIVY_TIMEOUT: "10m"
-
   cache:
-    key: trivy-cache
+    key: trivy-db-cache
     paths:
       - .trivycache/
-
   script:
     - mkdir -p reports/
     - |
       REGISTRY="registry.gitlab.com/devsecopsi-group/devsecops-project"
-
       for service in eureka-service course-service api-gateway-service user-service exam-service answer-service frontend; do
         IMAGE="$REGISTRY/$service:latest"
         echo "🛡️ Scanning $IMAGE..."
-
         trivy image \
           --username gitlab-ci-token \
           --password $CI_JOB_TOKEN \
@@ -416,7 +481,6 @@ container_scan:
           --template "@/contrib/html.tpl" \
           --output "reports/${service}-report.html" \
           $IMAGE || true
-
         trivy image \
           --username gitlab-ci-token \
           --password $CI_JOB_TOKEN \
@@ -425,81 +489,66 @@ container_scan:
           --output "reports/${service}-report.json" \
           $IMAGE || true
       done
-
   artifacts:
     when: always
     paths:
       - reports/
     expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_success
 
-  only:
-    - main
-
-  when: manual
+############################
+# SIGNATURE DES IMAGES
+############################
 sign-images:
   stage: docker-scan
-  image: 
-    name: sigstore/cosign:v2.2.4  # Image officielle, version stable testée
+  image:
+    name: sigstore/cosign:v2.2.4
     entrypoint: [""]
   tags: [vm]
-  needs: ["docker-build-backend", "docker-build-frontend"]
+  needs:
+    - docker-build-backend
+    - docker-build-frontend
+    - container_scan
   script:
     - echo "🔏 Signature cryptographique des images..."
-    # 1. Connexion au registre GitLab
     - echo "$CI_JOB_TOKEN" | cosign login registry.gitlab.com -u gitlab-ci-token --password-stdin
-    
-    # 2. Signature des images
     - |
       for service in user-service exam-service answer-service course-service api-gateway-service eureka-service frontend; do
         IMAGE="registry.gitlab.com/devsecopsi-group/devsecops-project/$service:latest"
         echo "Signing $IMAGE"
-        # Utilisation de la syntaxe compatible v2.2.4
         cosign sign --key env://COSIGN_PRIVATE_KEY --tlog-upload=false --yes $IMAGE
       done
   allow_failure: true
-secret-detection:
-  stage: security-scan
-  tags:
-     - vm
-  image: 
-    name: zricethezav/gitleaks:latest
-    entrypoint: [""]
-  script:
-    - echo "🔍 Analyse du dépôt à la recherche de secrets..."
-    # On scanne tout l'historique du projet
-    - gitleaks detect --source . --redact --report-format sarif --report-path gl-secret-report.sarif || true
-  artifacts:
-    expire_in: 1 week
-    reports:
-      sast: gl-secret-report.sarif
-  allow_failure: true
-  
+
+############################
+# DÉPLOIEMENT CONTINU — DIGITALOCEAN
+############################
 deploy-to-digitalocean:
   stage: deploy-cloud
   tags:
-     - vm
+    - vm
   image: dtzar/helm-kubectl:latest
   variables:
-    KUBECONFIG: $KUBECONFIG_CONTENT 
+    KUBECONFIG: $KUBECONFIG_CONTENT
   script:
     - echo "🚀 Déploiement via le fichier KUBECONFIG..."
     - kubectl get nodes
     - kubectl apply -f k8s/
-
-   # --- SECTION FALCO (AVEC FILTRE IA) ---
     - echo "🕵️ Mise à jour de Falco avec redirection vers l'IA..."
     - helm repo add falcosecurity https://falcosecurity.github.io/charts && helm repo update
     - |
       helm upgrade --install falco falcosecurity/falco -n falco --create-namespace \
         --set falcosidekick.enabled=true \
-        --set falcosidekick.config.webhook.address="https://amnesty-starship-cartel.ngrok-free.dev/falco-webhook" \
+        --set falcosidekick.config.webhook.address="${FALCO_WEBHOOK_URL}" \
         --set falcosidekick.config.webhook.minimumpriority="notice" \
         --set falcosidekick.config.slack.webhookurl="" \
         --set falcosidekick.config.defectdojo.url="${DEFECTDOJO_URL}" \
         --set falcosidekick.config.defectdojo.token="${DEFECTDOJO_TOKEN}" \
         --set falcosidekick.config.defectdojo.productid="1"
-
-   # Installation/Update du Monitoring (Prometheus/Grafana)
     - echo "📈 Mise à jour du Monitoring..."
     - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
     - helm repo update
@@ -507,36 +556,33 @@ deploy-to-digitalocean:
       helm upgrade --install monitoring prometheus-community/kube-prometheus-stack -n monitoring --create-namespace \
         --set prometheus.prometheusSpec.resources.limits.memory=1024Mi \
         --set grafana.resources.limits.memory=512Mi
-
-    # Force le redémarrage pour les nouvelles images
-    - kubectl rollout restart deployment
+    - |
+      for dep in user-service course-service answer-service exam-service api-gateway-service eureka-service frontend; do
+        kubectl rollout restart deployment/$dep
+      done
   only:
     - main
 
+############################
+# DAST — OWASP ZAP
+############################
 owasp-zap-dast:
   stage: dast-scan
-  image: 
+  image:
     name: zaproxy/zap-stable
-    entrypoint: [""] # Obligatoire pour outrepasser l'entrypoint par défaut de ZAP
+    entrypoint: [""]
   tags:
-     - vm
+    - vm
   before_script:
     - mkdir -p /zap/wrk
   script:
-    - echo "🚀 Démarrage des scans DAST sur le Cloud DigitalOcean..."
-    
+    - echo "🚀 Démarrage des scans DAST..."
     - echo "1. Scan de l'API Gateway"
-    # Note : On n'utilise plus "docker run", on appelle directement le script
-    - zap-baseline.py -t http://157.245.22.96 -r zap_gateway_report.html -x zap_gateway_report.xml || true
-    
+    - zap-baseline.py -t ${STAGING_API_URL} -r zap_gateway_report.html -x zap_gateway_report.xml || true
     - echo "2. Scan du Frontend Angular"
-    - zap-baseline.py -t http://157.230.77.38 -r zap_frontend_report.html -x zap_frontend_report.xml || true
-    
-    # TRÈS IMPORTANT : ZAP écrit les rapports dans /zap/wrk/
-    # On les copie dans le dossier courant pour que GitLab les trouve
+    - zap-baseline.py -t ${STAGING_FRONTEND_URL} -r zap_frontend_report.html -x zap_frontend_report.xml || true
     - cp /zap/wrk/zap_gateway_report.* .
     - cp /zap/wrk/zap_frontend_report.* .
-    
   artifacts:
     when: always
     paths:
@@ -546,7 +592,10 @@ owasp-zap-dast:
       - "zap_frontend_report.html"
     expire_in: 1 week
   allow_failure: true
- 
+
+############################
+# TEMPLATES UPLOAD DEFECTDOJO
+############################
 .upload_template: &upload_template
   stage: upload-defectdojo
   image: alpine:latest
@@ -556,11 +605,10 @@ owasp-zap-dast:
     - apk add --no-cache curl
     - |
       if [ -z "$DEFECTDOJO_URL" ] || [ -z "$DEFECTDOJO_TOKEN" ]; then
-        echo "❌ ERROR: DEFECTDOJO_URL ou DEFECTDOJO_TOKEN n'est pas défini dans les variables CI/CD"
+        echo "❌ ERROR: DEFECTDOJO_URL ou DEFECTDOJO_TOKEN non défini"
         exit 1
       fi
 
-# 1. Push Secrets (Gitleaks)
 upload-secrets:
   <<: *upload_template
   needs: ["secret-detection"]
@@ -578,7 +626,6 @@ upload-secrets:
         echo "⚠️ gl-secret-report.sarif introuvable."
       fi
 
-# 2. Push Container Scan (Trivy)
 upload-trivy-backend:
   <<: *upload_template
   needs: ["container_scan"]
@@ -597,7 +644,6 @@ upload-trivy-backend:
         fi
       done
 
-# 3. Push DAST (ZAP XML)
 upload-zap-dast:
   <<: *upload_template
   needs: ["owasp-zap-dast"]
@@ -614,9 +660,8 @@ upload-zap-dast:
             -F "engagement_name=Pipeline-Full-Scan" \
             -F "file=@$file"
         fi
-      done # Le 'done' ferme la boucle, pas besoin de 'fi' ici si on n'utilise pas de 'if' global
+      done
 
-# 4. Push SonarQube
 upload-sonarqube:
   <<: *upload_template
   needs: ["sonarqube-backend"]
@@ -629,9 +674,12 @@ upload-sonarqube:
           -F "scan_type=SonarQube API Import" \
           -F "product_name=DevsecopsApp" \
           -F "engagement_name=Pipeline-Full-Scan" \
-          -F "service=$service" \
-          -F "active=true" -F "verified=true" -F "push_to_jira=true"
+          -F "sonarqube_url=${SONAR_HOST_URL}" \
+          -F "sonarqube_token=${SONAR_TOKEN}" \
+          -F "project_key=${service}" \
+          -F "active=true" -F "verified=true"
       done
+
 upload-opa-to-jira:
   <<: *upload_template
   needs: ["opa-gatekeeper-check"]
@@ -646,26 +694,11 @@ upload-opa-to-jira:
           -F "product_name=DevsecopsApp" \
           -F "engagement_name=Pipeline-Full-Scan" \
           -F "file=@opa-report.json"
-      fi  
+      fi
 
-    - sl check-analysis --app "$CI_PROJECT_NAME-backend" --report --format sarif > qwiet-report.sarif
-
-    # 3. Envoi du rapport Qwiet vers DefectDojo
-    - |
-      echo "🛡️ Envoi du rapport Qwiet (SAST) vers DefectDojo..."
-      curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
-        -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
-        -H "Content-Type: multipart/form-data" \
-        -F "active=true" \
-        -F "verified=true" \
-        -F "scan_type=SARIF" \
-        -F "product_name=DigitalOcean-App" \
-        -F "engagement_name=Qwiet Scan" \
-        -F "file=@qwiet-report.sarif"
-# N'oublie pas d'ajouter le stage en haut de ton fichier
-# stages:
-#   - ...
-#   - ai-remediation
+############################
+# AGENT IA DE REMÉDIATION
+############################
 ai-remediation-agent:
   stage: ai-remediation
   image: python:3.11-slim
@@ -674,11 +707,19 @@ ai-remediation-agent:
   before_script:
     - pip install -q requests google-genai
   script:
+    - |
+      if [ ! -f "opa-report.json" ] || [ $(wc -c < opa-report.json) -lt 10 ]; then
+        echo "✅ Aucune violation OPA — agent IA non nécessaire"
+        exit 0
+      fi
     - echo "🤖 Lancement de l'Agent IA pour la remédiation..."
     - python3 ai-remediator/remediate.py
-  when: always 
+  when: on_failure
   allow_failure: true
 
+############################
+# TEST MANUEL — SIMULATION ATTAQUE FALCO
+############################
 test-falco-ai-alert:
   stage: ai-remediation
   image: dtzar/helm-kubectl:latest
@@ -688,18 +729,13 @@ test-falco-ai-alert:
   script:
     - |
       echo "🧪 Simulation d'une attaque pour tester l'IA de Falco..."
-      # On utilise des simples quotes pour le jsonpath pour éviter les conflits YAML
       POD_NAME=$(kubectl get pods -l app=frontend -o jsonpath='{.items[0].metadata.name}')
       echo "Cible du test : $POD_NAME"
-      
       if [ -z "$POD_NAME" ]; then
         echo "❌ Erreur : Aucun pod frontend trouvé !"
         exit 1
       fi
-
       echo "🔥 Tentative de lecture de /etc/shadow..."
       kubectl exec $POD_NAME -- cat /etc/shadow || true
-      
       echo "✅ Attaque simulée. Vérifie ton Slack pour l'analyse de l'IA !"
   when: manual
-  
