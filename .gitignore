@@ -11,3 +11,31 @@ target/
 # OS
 .DS_Store
 Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Secrets - never commit
+.env
+.env.*
+*.pem
+*.key
+cosign.key
+kubeconfig*
+*.kubeconfig
+
+# CI / scan outputs
+.trivycache/
+reports/
+*-report.json
+*-sbom.json
+opa-report.json
+gl-secret-report.sarif
+zap_*.html
+zap_*.xml
+
+# Binaries / local models
+*.exe
+*.gguf

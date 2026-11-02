@@ -1,0 +1,19 @@
+# Argo CD Application used during the PFE (see report, annex "Application Argo CD").
+# Argo CD watches the k8s/ folder of the GitLab repository and keeps the
+# DOKS cluster in sync with it (automated sync, prune and self-heal).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devsecops-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/devsecopsi-group/devsecops-project.git
+    targetRevision: main
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
